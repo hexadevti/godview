@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #05070f;
+  color: #e7ecf5;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+}
+
+/* Thin scrollbars inside panels */
+.gv-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.gv-scroll::-webkit-scrollbar-thumb {
+  background: #26324a;
+  border-radius: 8px;
+}
