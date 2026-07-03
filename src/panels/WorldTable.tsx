@@ -31,12 +31,14 @@ function inflColor(v: number) {
   return v > 6 ? "text-rose-400" : v > 4 ? "text-amber-300" : "text-slate-200";
 }
 
-export function WorldTable({ onClose }: { onClose: () => void }) {
+export function WorldTable({ onClose, scope }: { onClose: () => void; scope: Set<number> }) {
   const { world, selectedIsos, openCountry } = useSim();
   const [sortKey, setSortKey] = useState<Key>("gdp");
   const [asc, setAsc] = useState(false);
 
-  const rows = [...world.countries].sort((a, b) => {
+  const rows = world.countries
+    .filter((c) => scope.has(c.iso))
+    .sort((a, b) => {
     const va = val(a, sortKey);
     const vb = val(b, sortKey);
     const cmp = typeof va === "string" ? va.localeCompare(vb as string) : (va as number) - (vb as number);

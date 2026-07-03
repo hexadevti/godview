@@ -116,7 +116,7 @@ function CountryCard({ country }: { country: CountryState }) {
   return (
     <div
       data-testid="country-card"
-      className="gv-scroll pointer-events-auto flex max-h-[calc(100vh-9rem)] w-[340px] flex-none flex-col overflow-y-auto rounded-2xl border border-slate-800 bg-[#0a0f1c]/95 p-4 shadow-2xl backdrop-blur"
+      className="gv-scroll pointer-events-auto flex min-h-0 w-full flex-1 flex-col overflow-y-auto rounded-2xl border border-slate-800 bg-[#0a0f1c]/95 p-4 shadow-2xl backdrop-blur"
     >
       <div className="mb-3 flex items-start justify-between">
         <div>
@@ -176,17 +176,8 @@ function CountryCard({ country }: { country: CountryState }) {
 
 export function CountryCards() {
   const { world, selectedIsos } = useSim();
-  const open = selectedIsos
-    .map((iso) => world.countries.find((c) => c.iso === iso))
-    .filter((c): c is CountryState => !!c);
-
-  if (open.length === 0) return null;
-
-  return (
-    <div className="pointer-events-none absolute right-4 top-28 z-40 flex max-w-[calc(100vw-2rem)] justify-end gap-3 overflow-x-auto">
-      {open.map((c) => (
-        <CountryCard key={c.iso} country={c} />
-      ))}
-    </div>
-  );
+  const iso = selectedIsos[0];
+  const country = iso != null ? world.countries.find((c) => c.iso === iso) : undefined;
+  if (!country) return null;
+  return <CountryCard country={country} />;
 }
