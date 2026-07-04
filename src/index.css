@@ -26,3 +26,38 @@ body {
   background: #26324a;
   border-radius: 8px;
 }
+
+/* Datacenter marker: dot always visible, name revealed on hover */
+.gv-dc {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transform: translate(-50%, -50%);
+  cursor: default;
+  pointer-events: auto;
+}
+.gv-dc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 7px rgba(56, 189, 248, 0.9);
+  flex: none;
+}
+.gv-dc-name {
+  display: none;
+  white-space: nowrap;
+  font: 600 10px system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #e7ecf5;
+  background: rgba(13, 22, 38, 0.92);
+  border: 1px solid #22314f;
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+.gv-dc:hover .gv-dc-name {
+  display: inline-block;
+}
+.gv-dc:hover .gv-dc-dot {
+  background: #a78bfa;
+  box-shadow: 0 0 9px rgba(167, 139, 250, 1);
+}

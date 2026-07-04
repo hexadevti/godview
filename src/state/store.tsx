@@ -19,7 +19,7 @@ import type {
   WorldState,
 } from "../sim/types";
 
-const MAX_HISTORY = 312; // ~6 years of simulated weeks
+const MAX_HISTORY = 520; // ~10 years of simulated weeks (scroll the chart to review)
 
 export interface HistoryPoint {
   tick: number;
@@ -28,6 +28,10 @@ export interface HistoryPoint {
   fx: number;
   growth: number;
   tradeBalance: number;
+  unemployment: number;
+  debt: number;
+  approval: number;
+  gini: number;
 }
 
 interface SimValue {
@@ -42,6 +46,7 @@ interface SimValue {
   reset: () => void;
   setSpeed: (s: number) => void;
   setControl: (iso: number, field: keyof CountryControls, value: number) => void;
+  setCommodity: (value: number) => void;
   setScenario: (id: string) => void;
   openCountry: (iso: number) => void;
   closeCountry: (iso: number) => void;
@@ -90,18 +95,24 @@ export function SimProvider({ children }: { children: ReactNode }) {
   function appendHistory(w: WorldState) {
     const h = historyRef.current;
     for (const c of w.countries) {
-      const arr = h[c.iso] ?? (h[c.iso] = []);
-      arr.push({
+      const prev = h[c.iso] ?? [];
+      // New array reference each tick so Recharts (which memoizes on the `data`
+      // reference) detects the new points instead of freezing on the first one.
+      const next = prev.length >= MAX_HISTORY ? prev.slice(1) : prev.slice();
+      next.push({
         tick: w.tick,
         gdp: c.gdp,
         inflation: c.inflationAnn,
         fx: c.fx,
         growth: c.gdpGrowthAnn,
         tradeBalance: c.tradeBalancePctGdp,
+        unemployment: c.unemployment,
+        debt: c.debtPctGdp,
+        approval: c.approval,
+        gini: c.gini,
       });
-      if (arr.length > MAX_HISTORY) arr.shift();
+      h[c.iso] = next;
     }
-    // Publish a shallow copy so React re-renders consumers.
     setHistory({ ...h });
   }
 
@@ -127,6 +138,8 @@ export function SimProvider({ children }: { children: ReactNode }) {
       setSpeed: (s: number) => workerRef.current?.postMessage({ type: "setSpeed", speed: s }),
       setControl: (iso, field, val) =>
         workerRef.current?.postMessage({ type: "setControl", iso, field, value: val }),
+      setCommodity: (value: number) =>
+        workerRef.current?.postMessage({ type: "setCommodity", value }),
       setScenario: (id: string) => {
         setScenarioId(id);
         resetHistory();

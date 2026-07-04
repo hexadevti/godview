@@ -5,7 +5,9 @@
 
 import type { CountryState } from "../sim/types";
 
-export type Metric = "gdp" | "growth" | "inflation";
+export type Metric =
+  | "gdp" | "growth" | "inflation" | "unemployment" | "inequality" | "approval"
+  | "gdpPerCapita" | "population";
 
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 
@@ -32,6 +34,12 @@ export interface MetricScale {
 
 const GDP_LO = Math.log10(0.3);
 const GDP_HI = Math.log10(30);
+const PC_LO = Math.log10(500);
+const PC_HI = Math.log10(120000);
+const POP_LO = Math.log10(1);
+const POP_HI = Math.log10(1500);
+/** GDP per capita in USD: GDP (tri USD) / population (millions) * 1e6. */
+const perCapita = (c: CountryState) => (c.population > 0 ? (c.gdp * 1e6) / c.population : 0);
 
 export const METRIC_SCALES: Record<Metric, MetricScale> = {
   gdp: {
@@ -60,6 +68,51 @@ export const METRIC_SCALES: Record<Metric, MetricScale> = {
     t: (v) => clamp01(v / 25),
     ticks: [0, 5, 10, 15, 20, 25],
     fmt: (v) => `${v}%`,
+  },
+  unemployment: {
+    label: "Desemprego — % da força de trabalho",
+    lo: "#22c55e",
+    hi: "#ef4444",
+    value: (c) => c.unemployment,
+    t: (v) => clamp01(v / 30),
+    ticks: [0, 6, 12, 18, 24, 30],
+    fmt: (v) => `${v}%`,
+  },
+  inequality: {
+    label: "Desigualdade — índice de Gini",
+    lo: "#22c55e",
+    hi: "#a21caf",
+    value: (c) => c.gini,
+    t: (v) => clamp01((v - 25) / 40),
+    ticks: [25, 35, 45, 55, 65],
+    fmt: (v) => `${v}`,
+  },
+  approval: {
+    label: "Aprovação — índice 0–100",
+    lo: "#ef4444",
+    hi: "#22c55e",
+    value: (c) => c.approval,
+    t: (v) => clamp01(v / 100),
+    ticks: [0, 25, 50, 75, 100],
+    fmt: (v) => `${v}`,
+  },
+  gdpPerCapita: {
+    label: "PIB per capita — US$ (escala log)",
+    lo: "#052e16",
+    hi: "#4ade80",
+    value: perCapita,
+    t: (v) => clamp01((Math.log10(v) - PC_LO) / (PC_HI - PC_LO)),
+    ticks: [500, 2000, 10000, 40000, 120000],
+    fmt: (v) => (v >= 1000 ? `$${v / 1000}k` : `$${v}`),
+  },
+  population: {
+    label: "População — milhões (escala log)",
+    lo: "#1e293b",
+    hi: "#60a5fa",
+    value: (c) => c.population,
+    t: (v) => clamp01((Math.log10(v) - POP_LO) / (POP_HI - POP_LO)),
+    ticks: [1, 10, 100, 500, 1500],
+    fmt: (v) => (v >= 1000 ? `${v / 1000} bi` : `${v} mi`),
   },
 };
 

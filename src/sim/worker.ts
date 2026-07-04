@@ -71,5 +71,10 @@ ctx.onmessage = (e: MessageEvent<ToWorker>) => {
       }
       break;
     }
+    case "setCommodity": {
+      world = { ...world, commodityPrice: msg.value };
+      post({ type: "state", world, running });
+      break;
+    }
   }
 };

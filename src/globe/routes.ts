@@ -1,12 +1,21 @@
 // Builds the air and sea routes (dense point lists + cumulative lengths) and
 // the moving vehicles that travel along them.
 
-import { AIRPORTS } from "../data/airports";
-import { CITIES, type City } from "../data/cities";
+import { ALL_CITY_ISOS, citiesFor } from "../data/allCities";
+import { type City } from "../data/cities";
+import { autoEdges, edgeKey } from "../data/internalNet";
 import { CORRIDORS } from "../data/landCorridors";
+import airData from "../data/generated/air-routes.json";
+import roadData from "../data/generated/road-routes.json";
 import { SEA_LANES } from "../data/seaLanes";
-import { TRADE_FLOWS } from "../data/trade";
 import { cumulative, densify, greatCircle, haversine, type LatLng } from "./geo";
+
+// Real driving geometry per land corridor (OSRM), keyed "iso:CityA>CityB".
+const ROAD_ROUTES = (roadData as unknown as { routes: Record<string, LatLng[]> }).routes;
+
+// Real airport-pair connectivity (OpenFlights), weighted by Comtrade trade.
+interface AirRoute { from: number; to: number; value: number; a: [number, number]; b: [number, number] }
+const AIR_ROUTES = (airData as unknown as { routes: AirRoute[] }).routes;
 
 // air/sea = international; road/rail = internal (only shown for the selected country).
 export type RouteKind = "air" | "sea" | "road" | "rail";
@@ -29,29 +38,9 @@ function makeRoute(kind: RouteKind, from: number, to: number, value: number, poi
 function buildRoutes(): Route[] {
   const routes: Route[] = [];
 
-  // Air: fan out from up to 3 real airports per origin country, each connecting
-  // to the geographically nearest airport in the destination country. The flow
-  // value is split across those parallel corridors.
-  const airFlows = [...TRADE_FLOWS]
-    .filter((f) => AIRPORTS[f.from] && AIRPORTS[f.to] && f.value >= 40)
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 48);
-  for (const f of airFlows) {
-    const origins = AIRPORTS[f.from].slice(0, 4);
-    const dests = AIRPORTS[f.to];
-    const perValue = f.value / origins.length;
-    for (const o of origins) {
-      let best = dests[0];
-      let bestDist = Infinity;
-      for (const d of dests) {
-        const dist = haversine(o[0], o[1], d[0], d[1]);
-        if (dist < bestDist) {
-          bestDist = dist;
-          best = d;
-        }
-      }
-      routes.push(makeRoute("air", f.from, f.to, perValue, greatCircle(o[0], o[1], best[0], best[1], 48)));
-    }
+  // Air: real airport-pair connectivity (OpenFlights), geodesic geometry.
+  for (const a of AIR_ROUTES) {
+    routes.push(makeRoute("air", a.from, a.to, a.value, greatCircle(a.a[0], a.a[1], a.b[0], a.b[1], 48)));
   }
 
   // Sea: curated corridors through real chokepoints.
@@ -59,9 +48,10 @@ function buildRoutes(): Route[] {
     routes.push(makeRoute("sea", lane.from, lane.to, lane.value, densify(lane.waypoints, 300)));
   }
 
-  // Internal road & rail networks per country (from/to = same iso).
-  for (const [isoStr, cities] of Object.entries(CITIES)) {
-    routes.push(...buildInternal(Number(isoStr), cities));
+  // Internal road & rail networks for EVERY country (from/to = same iso). The
+  // G20 use curated real corridors; the rest auto-build from their top cities.
+  for (const iso of ALL_CITY_ISOS) {
+    routes.push(...buildInternal(iso, citiesFor(iso)));
   }
 
   return routes;
@@ -81,9 +71,16 @@ function buildCorridors(iso: number, cities: City[], c: { road: string[][]; rail
   const byName = new Map(cities.map((city) => [city.name, city]));
   const build = (kind: RouteKind, seqs: string[][]) =>
     seqs
-      .map((names) => names.map((n) => byName.get(n)).filter((x): x is City => !!x))
-      .filter((pts) => pts.length >= 2)
-      .map((pts) => makeRoute(kind, iso, iso, 0, densify(pts.map((p) => [p.lat, p.lng] as LatLng), 120)));
+      .map((names) => {
+        const pts = names.map((n) => byName.get(n)).filter((x): x is City => !!x);
+        if (pts.length < 2) return null;
+        // Real driving geometry (road; rail approximated by road path); great
+        // circle if this corridor wasn't routable.
+        const real = ROAD_ROUTES[`${iso}:${names.join(">")}`];
+        const waypoints = real && real.length >= 2 ? real : densify(pts.map((p) => [p.lat, p.lng] as LatLng), 120);
+        return makeRoute(kind, iso, iso, 0, waypoints);
+      })
+      .filter((r): r is Route => r !== null);
   const routes = [...build("road", c.road), ...build("rail", c.rail)];
 
   const covered = new Set([...c.road.flat(), ...c.rail.flat()]);
@@ -101,42 +98,21 @@ function buildCorridors(iso: number, cities: City[], c: { road: string[][]; rail
   return routes;
 }
 
-/** Fallback: road = each city to its 2 nearest; rail = trunk chain through all. */
+/** Auto network (non-corridor countries): road = each city to its 2 nearest,
+ *  rail = trunk chain through all. Uses REAL OSRM driving geometry where the
+ *  roads ingest produced it (keyed by city pair), else a great-circle link. */
 function buildAuto(iso: number, cities: City[]): Route[] {
-  const out: Route[] = [];
-  const dist = (a: number, b: number) => haversine(cities[a].lat, cities[a].lng, cities[b].lat, cities[b].lng);
-  const link = (kind: RouteKind, a: number, b: number) =>
-    makeRoute(kind, iso, iso, 0, greatCircle(cities[a].lat, cities[a].lng, cities[b].lat, cities[b].lng, 14));
-
-  const seen = new Set<string>();
-  for (let i = 0; i < cities.length; i++) {
-    const order = cities.map((_, j) => j).filter((j) => j !== i).sort((x, y) => dist(i, x) - dist(i, y));
-    for (const j of order.slice(0, 2)) {
-      const key = i < j ? `${i}-${j}` : `${j}-${i}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(link("road", i, j));
-    }
-  }
-
-  const visited = new Set([0]);
-  let cur = 0;
-  while (visited.size < cities.length) {
-    let best = -1;
-    let bd = Infinity;
-    for (let j = 0; j < cities.length; j++) {
-      if (visited.has(j)) continue;
-      const d = dist(cur, j);
-      if (d < bd) {
-        bd = d;
-        best = j;
-      }
-    }
-    out.push(link("rail", cur, best));
-    visited.add(best);
-    cur = best;
-  }
-  return out;
+  const { road, rail } = autoEdges(cities);
+  const link = (kind: RouteKind, a: number, b: number) => {
+    const A = cities[a], B = cities[b];
+    const real = ROAD_ROUTES[edgeKey(iso, A, B)] ?? ROAD_ROUTES[edgeKey(iso, B, A)];
+    const pts = real && real.length >= 2 ? real : greatCircle(A.lat, A.lng, B.lat, B.lng, 14);
+    return makeRoute(kind, iso, iso, 0, pts);
+  };
+  return [
+    ...road.map(([a, b]) => link("road", a, b)),
+    ...rail.map(([a, b]) => link("rail", a, b)),
+  ];
 }
 
 export const ROUTES: Route[] = buildRoutes();

@@ -7,13 +7,17 @@ import { useSim } from "../state/store";
 const SPEEDS = [1, 2, 4];
 
 export function Timeline() {
-  const { running, speed, scenarioId, world, play, pause, reset, setSpeed, setScenario } = useSim();
+  const { running, speed, scenarioId, world, play, pause, reset, setSpeed, setScenario, setCommodity } =
+    useSim();
 
   const years = Math.floor(world.tick / 52);
   const weeks = world.tick % 52;
+  const commodity = world.commodityPrice;
+  const shocked = commodity > 105;
+  const inCrisis = world.countries.filter((c) => c.inCrisis).length;
 
   return (
-    <div className="pointer-events-auto absolute bottom-0 left-1/2 z-40 mb-4 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-slate-800 bg-[#0a0f1c]/90 px-4 py-2.5 shadow-xl backdrop-blur">
+    <div className="pointer-events-auto absolute bottom-0 left-1/2 z-40 mb-4 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-slate-700/60 bg-[#0a0f1c]/55 px-4 py-2.5 shadow-xl backdrop-blur-lg">
       <select
         value={scenarioId}
         onChange={(e) => setScenario(e.target.value)}
@@ -58,6 +62,33 @@ export function Timeline() {
       >
         ⟲ Reset
       </button>
+
+      <div className="h-6 w-px bg-slate-700" />
+
+      {/* Global commodity/energy price + shock event */}
+      <button
+        onClick={() => setCommodity(shocked ? 100 : 160)}
+        title={
+          shocked
+            ? "Normalizar o preço de commodities"
+            : "Disparar choque de commodities/energia (+60%): inflação sobe para todos; exportadores lucram"
+        }
+        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
+          shocked ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+        }`}
+      >
+        🛢️ {commodity.toFixed(0)}
+        <span className="text-[10px] font-normal text-slate-400">{shocked ? "· normalizar" : "· choque"}</span>
+      </button>
+
+      {inCrisis > 0 && (
+        <div
+          className="flex items-center gap-1 rounded-md bg-rose-500/20 px-2 py-1.5 text-xs font-semibold text-rose-300"
+          title="Países em crise política (aprovação em colapso / instabilidade)"
+        >
+          ⚠ {inCrisis} em crise
+        </div>
+      )}
 
       <div className="h-6 w-px bg-slate-700" />
 

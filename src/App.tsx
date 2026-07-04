@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { G20 } from "./data/g20";
+import { G20, SNAPSHOT_META } from "./data/g20";
 import { SCOPES } from "./data/scopes";
 import { GlobeView, type LayerState, type Metric } from "./globe/GlobeView";
 import { CountryCards } from "./panels/CountryPanel";
@@ -11,8 +11,13 @@ import { SimProvider, useSim } from "./state/store";
 
 const METRICS: Array<{ id: Metric; label: string }> = [
   { id: "gdp", label: "Poder (PIB)" },
+  { id: "gdpPerCapita", label: "PIB per capita" },
+  { id: "population", label: "População" },
   { id: "growth", label: "Crescimento" },
   { id: "inflation", label: "Inflação" },
+  { id: "unemployment", label: "Desemprego" },
+  { id: "inequality", label: "Desigualdade" },
+  { id: "approval", label: "Aprovação" },
 ];
 
 const LAYER_DEFS: Array<{ id: keyof LayerState; label: string; color: string }> = [
@@ -21,6 +26,10 @@ const LAYER_DEFS: Array<{ id: keyof LayerState; label: string; color: string }> 
   { id: "road", label: "Rodoviário", color: "#ef4444" },
   { id: "rail", label: "Ferroviário", color: "#22c55e" },
   { id: "cities", label: "Cidades", color: "#e2e8f0" },
+  { id: "cables", label: "Cabos", color: "#a78bfa" },
+  { id: "rivers", label: "Hidrovias", color: "#60a5fa" },
+  { id: "datacenters", label: "Datacenters", color: "#38bdf8" },
+  { id: "satellites", label: "Satélites", color: "#67e8f9" },
 ];
 
 const ALL_ISOS = G20.map((d) => d.iso);
@@ -31,6 +40,7 @@ function Shell() {
   const [scopeId, setScopeId] = useState("g20");
   const [layers, setLayers] = useState<LayerState>({
     air: true, sea: true, road: true, rail: true, cities: true,
+    cables: false, rivers: false, datacenters: false, satellites: false,
   });
   const { scenarioId } = useSim();
   const scenario = SCENARIOS.find((s) => s.id === scenarioId);
@@ -47,12 +57,15 @@ function Shell() {
       <GlobeView metric={metric} layers={layers} scope={scope} />
 
       {/* Title (top-left) */}
-      <div className="pointer-events-auto absolute left-4 top-4 z-40 w-60 rounded-xl border border-slate-800 bg-[#0a0f1c]/85 px-4 py-2.5 backdrop-blur">
+      <div className="pointer-events-auto absolute left-4 top-4 z-40 w-60 rounded-xl border border-slate-700/60 bg-[#0a0f1c]/55 px-4 py-2.5 backdrop-blur-lg">
         <h1 className="text-base font-bold tracking-tight text-white">
           GodView <span className="text-sky-400">·</span>{" "}
           <span className="text-xs font-normal text-slate-400">Macroeconomia Global</span>
         </h1>
         {scenario && <p className="mt-0.5 text-xs text-slate-400">{scenario.note}</p>}
+        {scenario?.objective && (
+          <p className="mt-1 rounded-md bg-sky-500/10 px-2 py-1 text-[11px] text-sky-300">🎯 {scenario.objective}</p>
+        )}
         <button
           onClick={() => setShowTable((v) => !v)}
           className={`mt-2 rounded-md px-2.5 py-1 text-xs font-semibold ${
@@ -61,11 +74,14 @@ function Shell() {
         >
           📊 {showTable ? "Ocultar tabela mundial" : "Tabela mundial"}
         </button>
+        <p className="mt-2 text-[10px] text-slate-500" title={SNAPSHOT_META.source.macro}>
+          Macro real: World Bank · snapshot {SNAPSHOT_META.asOf}
+        </p>
       </div>
 
       {/* Right column: controls (metric/legend/scope/layers) + country card */}
       <div className="pointer-events-none absolute bottom-4 right-4 top-4 z-40 flex w-[340px] flex-col gap-2">
-        <div className="pointer-events-auto flex-none rounded-xl border border-slate-800 bg-[#0a0f1c]/85 px-3 py-2 backdrop-blur">
+        <div className="pointer-events-auto flex-none rounded-xl border border-slate-700/60 bg-[#0a0f1c]/55 px-3 py-2 backdrop-blur-lg">
           <div className="mb-1.5 flex flex-wrap gap-1">
             {METRICS.map((m) => (
               <button
@@ -115,8 +131,6 @@ function Shell() {
             ))}
           </div>
         </div>
-
-        <CountryCards />
       </div>
 
       {/* Hint (bottom-left) */}
@@ -125,6 +139,7 @@ function Shell() {
       </div>
 
       {showTable && <WorldTable onClose={() => setShowTable(false)} scope={scope} />}
+      <CountryCards />
       <Timeline />
     </div>
   );
