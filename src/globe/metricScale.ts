@@ -7,7 +7,7 @@ import type { CountryState } from "../sim/types";
 
 export type Metric =
   | "gdp" | "growth" | "inflation" | "unemployment" | "inequality" | "approval"
-  | "gdpPerCapita" | "population";
+  | "gdpPerCapita" | "population" | "education";
 
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 
@@ -113,6 +113,15 @@ export const METRIC_SCALES: Record<Metric, MetricScale> = {
     t: (v) => clamp01((Math.log10(v) - POP_LO) / (POP_HI - POP_LO)),
     ticks: [1, 10, 100, 500, 1500],
     fmt: (v) => (v >= 1000 ? `${v / 1000} bi` : `${v} mi`),
+  },
+  education: {
+    label: "Educação — índice 0–100",
+    lo: "#7c2d12",
+    hi: "#38bdf8",
+    value: (c) => c.education,
+    t: (v) => clamp01(v / 100),
+    ticks: [0, 25, 50, 75, 100],
+    fmt: (v) => `${v}`,
   },
 };
 

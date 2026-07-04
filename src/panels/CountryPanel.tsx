@@ -241,6 +241,7 @@ function CountryCard({
               <Stat label="Risco (spread)" value={`+${country.sovereignSpread.toFixed(1)} p.p.`} help="spread" />
               <Stat label="Desigualdade (Gini)" value={country.gini.toFixed(0)} help="gini" />
               <Stat label="Pobreza" value={`${country.povertyPct.toFixed(0)}%`} help="poverty" />
+              <Stat label="Educação" value={`${country.education.toFixed(0)}/100`} help="education" />
             </div>
           </div>
         </div>

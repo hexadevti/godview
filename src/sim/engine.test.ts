@@ -34,6 +34,8 @@ describe("estabilidade do motor", () => {
         expect(c.povertyPct).toBeLessThanOrEqual(85.01);
         expect(c.approval, `${tag} approval`).toBeGreaterThanOrEqual(-0.01);
         expect(c.approval).toBeLessThanOrEqual(100.01);
+        expect(c.education, `${tag} education`).toBeGreaterThanOrEqual(4.99);
+        expect(c.education).toBeLessThanOrEqual(100.01);
         expect(c.unrest).toBeGreaterThanOrEqual(-0.01);
         expect(c.unrest).toBeLessThanOrEqual(100.01);
         expect(c.sovereignSpread).toBeGreaterThanOrEqual(-0.01);

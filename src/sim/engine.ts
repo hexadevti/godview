@@ -28,6 +28,7 @@ const DAMP_POV = 0.05; // poverty
 const DAMP_APPROVAL = 0.04; // approval (opinion changes slowly)
 const DAMP_UNREST = 0.08; // unrest
 const DAMP_SPREAD = 0.2; // sovereign risk premium (fast)
+const DAMP_EDU = 0.01; // education quality (glacial — years/decades)
 
 const WEEKS_PER_YEAR = 52;
 
@@ -96,6 +97,7 @@ export function initialWorld(scenario: ScenarioSnapshot): WorldState {
       povertyPct: d.poverty0,
       approval: d.approval0,
       population: d.population0,
+      education: d.education0,
       fiscalBalancePctGdp: 0,
       sovereignSpread: 0,
       unrest: 0,
@@ -168,7 +170,8 @@ export function tick(world: WorldState): WorldState {
       0.02 * tariff -
       0.03 * (taxRate - d.taxBaseline) -
       0.1 * c.sovereignSpread -
-      0.03 * Math.max(0, c.unrest - 50);
+      0.03 * Math.max(0, c.unrest - 50) +
+      0.02 * (c.education - d.education0); // human capital: schooling above baseline lifts productivity
     const gdpGrowthAnn = clamp(c.gdpGrowthAnn + DAMP_G * (growthTarget - c.gdpGrowthAnn), -12, 14);
 
     // --- Unemployment (Okun's law): growth above potential pulls unemployment
@@ -272,6 +275,15 @@ export function tick(world: WorldState): WorldState {
     );
     const unrest = clamp(c.unrest + DAMP_UNREST * (unrestTarget - c.unrest), 0, 100);
 
+    // --- Education quality: rises with schooling investment (social + gov
+    //     spending), eroded by sustained unrest; drifts very slowly (years). ---
+    const eduTarget = clamp(
+      d.education0 + 0.15 * (socialSpendShare - 50) + 0.08 * (govSpending - 50) - 0.1 * Math.max(0, c.unrest - 50),
+      5,
+      100,
+    );
+    const education = clamp(c.education + DAMP_EDU * (eduTarget - c.education), 5, 100);
+
     // --- Composite wellbeing index (display scoreboard) ---
     const wellbeing = clamp(
       100 - 0.5 * povertyPct - 0.4 * (gini - 25) - 0.3 * unemployment - 0.2 * Math.max(0, inflationAnn),
@@ -302,6 +314,7 @@ export function tick(world: WorldState): WorldState {
       povertyPct,
       approval,
       population,
+      education,
       fiscalBalancePctGdp,
       sovereignSpread,
       unrest,

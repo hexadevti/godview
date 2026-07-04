@@ -44,6 +44,7 @@ export interface CountryConst {
   taxBaseline: number; // baseline tax burden, % of GDP (neutral tax lever)
   approval0: number; // starting public approval, 0..100
   commodityExporter: number; // net commodity exposure, -1 (importer) .. +1 (exporter)
+  education0: number; // education quality index 0..100 (World Bank harmonized learning outcomes)
 }
 
 /** Mutable per-country state advanced each tick. */
@@ -62,6 +63,7 @@ export interface CountryState {
   povertyPct: number; // poverty headcount, %
   approval: number; // public approval / political capital, 0..100 (the game score)
   population: number; // millions
+  education: number; // education quality index 0..100 (evolves with investment)
   // ---- Derived each tick (kept on state for charts + display) ----
   fiscalBalancePctGdp: number; // budget balance, % of GDP (negative = deficit)
   sovereignSpread: number; // risk premium added to borrowing cost, p.p.

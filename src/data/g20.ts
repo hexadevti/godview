@@ -32,6 +32,7 @@ export interface G20Datum {
   taxBaseline: number; // baseline tax burden, % of GDP (World Bank/curated)
   approval0: number; // starting public approval, 0..100 (curated)
   commodityExporter: number; // net commodity exposure, -1..+1 (curated)
+  education0: number; // education quality index 0..100 (World Bank harmonized learning outcomes)
 }
 
 /** As-of date + provenance of the generated snapshot. */
@@ -54,6 +55,7 @@ const withDefaults = (c: Record<string, number | string>): G20Datum => ({
   taxBaseline: (c.taxBaseline as number) ?? 20,
   approval0: (c.approval0 as number) ?? 52,
   commodityExporter: (c.commodityExporter as number) ?? 0,
+  education0: (c.education0 as number) ?? 50,
 });
 
 export const G20: G20Datum[] = (

@@ -11,7 +11,7 @@ import { useDraggable } from "./useDraggable";
 
 type Key =
   | "name" | "gdp" | "gdpGrowthAnn" | "inflationAnn" | "policyRate" | "fx" | "tradeBalancePctGdp"
-  | "unemployment" | "debtPctGdp" | "gini" | "approval" | "population" | "gdpPerCapita";
+  | "unemployment" | "debtPctGdp" | "gini" | "approval" | "population" | "gdpPerCapita" | "education";
 
 const COLS: Array<{ key: Key; label: string; num: boolean; help?: HelpId }> = [
   { key: "name", label: "País", num: false },
@@ -24,6 +24,7 @@ const COLS: Array<{ key: Key; label: string; num: boolean; help?: HelpId }> = [
   { key: "policyRate", label: "Juros", num: true, help: "rate" },
   { key: "debtPctGdp", label: "Dívida", num: true, help: "debt" },
   { key: "gini", label: "Gini", num: true, help: "gini" },
+  { key: "education", label: "Educ.", num: true, help: "education" },
   { key: "tradeBalancePctGdp", label: "Saldo", num: true, help: "trade" },
   { key: "approval", label: "Aprov.", num: true, help: "approval" },
 ];
@@ -184,6 +185,7 @@ export function WorldTable({ onClose, scope }: { onClose: () => void; scope: Set
                 <td title={PROVENANCE.rate} className="py-1.5 text-right tabular-nums text-slate-200">{c.controls.policyRate.toFixed(2)}%</td>
                 <td title={PROVENANCE.debt} className="py-1.5 text-right tabular-nums text-slate-200">{c.debtPctGdp.toFixed(0)}%</td>
                 <td title={PROVENANCE.gini} className="py-1.5 text-right tabular-nums text-slate-200">{c.gini.toFixed(0)}</td>
+                <td title={PROVENANCE.education} className="py-1.5 text-right tabular-nums text-slate-200">{c.education.toFixed(0)}</td>
                 <td title={PROVENANCE.trade} className={`py-1.5 text-right tabular-nums ${c.tradeBalancePctGdp < 0 ? "text-rose-400" : "text-emerald-400"}`}>
                   {c.tradeBalancePctGdp.toFixed(1)}%
                 </td>

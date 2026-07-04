@@ -104,6 +104,7 @@ const IND = {
   debt: "GC.DOD.TOTL.GD.ZS",   // central government debt, total (% of GDP)
   tax: "GC.TAX.TOTL.GD.ZS",    // tax revenue (% of GDP)
   poverty: "SI.POV.DDAY",      // poverty headcount at $2.15/day (% of pop.)
+  education: "HD.HCI.HLOS",    // harmonized learning outcomes (test scores ~300–625)
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -158,12 +159,13 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 async function main() {
   console.log(`Fetching World Bank indicators for ${MASTER.length} countries…`);
-  const [gdp, infl, growth, exp, imp, unemp, pop, popGrowth, dependency, gini, debt, tax, poverty] =
+  const [gdp, infl, growth, exp, imp, unemp, pop, popGrowth, dependency, gini, debt, tax, poverty, edu] =
     await Promise.all([
       fetchAll(IND.gdp), fetchAll(IND.infl), fetchAll(IND.growth),
       fetchAll(IND.exports), fetchAll(IND.imports), fetchAll(IND.unemp),
       fetchAll(IND.pop), fetchAll(IND.popGrowth), fetchAll(IND.dependency),
       fetchAll(IND.gini), fetchAll(IND.debt), fetchAll(IND.tax), fetchAll(IND.poverty),
+      fetchAll(IND.education),
     ]);
 
   const countries = [];
@@ -199,6 +201,17 @@ async function main() {
     const approval0 = soc?.approval0 ?? 50;
     const commodityExporter = soc?.commodityExporter ?? 0;
 
+    // Education quality index 0..100. Real: World Bank harmonized learning
+    // outcomes (test scores ~300–625) mapped to 0..100. Fallback: a GDP-per-capita
+    // heuristic (income correlates strongly with schooling quality).
+    const hlos = latest(edu[k]);
+    const popRaw = latest(pop[k]);
+    const perCap = gdpUsd != null && popRaw ? gdpUsd / popRaw : null;
+    const eduFallback = perCap != null
+      ? clamp(25 + 22 * (Math.log10(clamp(perCap, 300, 80000)) - 2.5), 15, 90)
+      : 48;
+    const education0 = round(hlos != null ? clamp((hlos - 300) / 3, 5, 100) : eduFallback, 0);
+
     const exportShare = latest(exp[k]);
     const importShare = latest(imp[k]);
 
@@ -226,6 +239,7 @@ async function main() {
       taxBaseline,
       approval0,
       commodityExporter,
+      education0,
       _g20: isG20,
       _gdpYear: latestYear(gdp[k]),
     });

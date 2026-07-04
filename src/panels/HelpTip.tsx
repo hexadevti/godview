@@ -32,6 +32,7 @@ export const HELP = {
   commodity: "Preço global de commodities/energia (índice, 100 = base). Choques elevam a inflação de todos; exportadores (Arábia, Rússia, Brasil…) ganham em câmbio e saldo comercial.",
   population: "População total do país (World Bank). Evolui na simulação pela taxa de crescimento demográfico; alimenta a força de trabalho e a pressão fiscal (previdência).",
   gdpPerCapita: "PIB per capita = PIB ÷ população (US$ por habitante). Uma medida de renda média — melhor para comparar o padrão de vida entre países de tamanhos diferentes.",
+  education: "Qualidade da educação (índice 0–100), baseado nas notas harmonizadas de aprendizagem do World Bank. Sobe com investimento (gasto social e público), cai com instabilidade — muda devagar (anos). Educação melhor eleva a produtividade e o crescimento.",
 } as const;
 
 export type HelpId = keyof typeof HELP;
@@ -67,6 +68,7 @@ export const PROVENANCE: Record<HelpId, string> = {
   commodity: "Referência: índice do modelo (100 = base) · exógeno — você dispara os choques",
   population: "Referência: World Bank (SP.POP.TOTL) · ~2024 · dado real (evolui na simulação)",
   gdpPerCapita: "Calculado: PIB ÷ população (World Bank · 2024)",
+  education: "Referência: World Bank (HD.HCI.HLOS, notas harmonizadas) · ~2020 · dado real→índice (evolui na simulação)",
 };
 
 export function HelpTip({ id }: { id: HelpId }) {

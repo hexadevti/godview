@@ -17,6 +17,7 @@ const METRICS: Array<{ id: Metric; label: string }> = [
   { id: "inflation", label: "Inflação" },
   { id: "unemployment", label: "Desemprego" },
   { id: "inequality", label: "Desigualdade" },
+  { id: "education", label: "Educação" },
   { id: "approval", label: "Aprovação" },
 ];
 
