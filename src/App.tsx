@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { G20, SNAPSHOT_META } from "./data/g20";
 import { SCOPES } from "./data/scopes";
-import { GlobeView, type LayerState, type Metric } from "./globe/GlobeView";
+import { GlobeView, type BaseMap, type LayerState, type Metric } from "./globe/GlobeView";
 import { CountryCards } from "./panels/CountryPanel";
 import { Legend } from "./panels/Legend";
 import { Timeline } from "./panels/Timeline";
@@ -31,17 +31,30 @@ const LAYER_DEFS: Array<{ id: keyof LayerState; label: string; color: string }> 
   { id: "rivers", label: "Hidrovias", color: "#60a5fa" },
   { id: "datacenters", label: "Datacenters", color: "#38bdf8" },
   { id: "satellites", label: "Satélites", color: "#67e8f9" },
+  { id: "clouds", label: "Nuvens", color: "#e2e8f0" },
+  { id: "sky", label: "Céu ☀️🌙", color: "#fde68a" },
+];
+
+const BASE_MAPS: Array<{ id: BaseMap; label: string }> = [
+  { id: "political", label: "Político" },
+  { id: "terrain", label: "Relevo ×10" },
+  { id: "satellite", label: "Satélite" },
+  { id: "agora", label: "Agora ☀️🌙" },
+  { id: "night", label: "Noturno" },
+  { id: "hydro", label: "Hidrográfico" },
 ];
 
 const ALL_ISOS = G20.map((d) => d.iso);
 
 function Shell() {
   const [metric, setMetric] = useState<Metric>("gdp");
+  const [baseMap, setBaseMap] = useState<BaseMap>("political");
+  const [reliefScale, setReliefScale] = useState(6);
   const [showTable, setShowTable] = useState(false);
   const [scopeId, setScopeId] = useState("g20");
   const [layers, setLayers] = useState<LayerState>({
     air: true, sea: true, road: true, rail: true, cities: true,
-    cables: false, rivers: false, datacenters: false, satellites: false,
+    cables: false, rivers: false, datacenters: false, satellites: false, clouds: false, sky: false,
   });
   const { scenarioId } = useSim();
   const scenario = SCENARIOS.find((s) => s.id === scenarioId);
@@ -55,7 +68,7 @@ function Shell() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <GlobeView metric={metric} layers={layers} scope={scope} />
+      <GlobeView metric={metric} layers={layers} scope={scope} baseMap={baseMap} reliefScale={reliefScale} />
 
       {/* Title (top-left) */}
       <div className="pointer-events-auto absolute left-4 top-4 z-40 w-60 rounded-xl border border-slate-700/60 bg-[#0a0f1c]/55 px-4 py-2.5 backdrop-blur-lg">
@@ -83,22 +96,61 @@ function Shell() {
       {/* Right column: controls (metric/legend/scope/layers) + country card */}
       <div className="pointer-events-none absolute bottom-4 right-4 top-4 z-40 flex w-[340px] flex-col gap-2">
         <div className="pointer-events-auto flex-none rounded-xl border border-slate-700/60 bg-[#0a0f1c]/55 px-3 py-2 backdrop-blur-lg">
-          <div className="mb-1.5 flex flex-wrap gap-1">
-            {METRICS.map((m) => (
+          <div className="mb-1 text-[10px] uppercase tracking-wide text-slate-400">Mapa base</div>
+          <div className="mb-2 flex flex-wrap gap-1">
+            {BASE_MAPS.map((b) => (
               <button
-                key={m.id}
-                onClick={() => setMetric(m.id)}
+                key={b.id}
+                onClick={() => setBaseMap(b.id)}
                 className={`rounded-md px-2 py-1 text-xs font-semibold ${
-                  metric === m.id ? "bg-slate-200 text-slate-900" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                  baseMap === b.id ? "bg-slate-200 text-slate-900" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                 }`}
               >
-                {m.label}
+                {b.label}
               </button>
             ))}
           </div>
-          <Legend metric={metric} />
+
+          {baseMap === "terrain" && (
+            <div className="mb-1 mt-1.5 flex items-center gap-2">
+              <span className="w-12 text-[10px] uppercase tracking-wide text-slate-400">Relevo</span>
+              <input
+                type="range"
+                min={0}
+                max={15}
+                step={0.5}
+                value={reliefScale}
+                onChange={(e) => setReliefScale(Number(e.target.value))}
+                className="h-1 flex-1 cursor-pointer accent-sky-400"
+              />
+              <span className="w-9 text-right text-[11px] font-semibold tabular-nums text-sky-300">
+                ×{Math.round(reliefScale * 1.7)}
+              </span>
+            </div>
+          )}
 
           <div className="my-2 h-px bg-slate-800" />
+
+          {baseMap === "political" && (
+            <>
+              <div className="mb-1 text-[10px] uppercase tracking-wide text-slate-400">Métrica (cor dos países)</div>
+              <div className="mb-1.5 flex flex-wrap gap-1">
+                {METRICS.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => setMetric(m.id)}
+                    className={`rounded-md px-2 py-1 text-xs font-semibold ${
+                      metric === m.id ? "bg-slate-200 text-slate-900" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <Legend metric={metric} />
+              <div className="my-2 h-px bg-slate-800" />
+            </>
+          )}
 
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-wide text-slate-400">Escopo</span>
