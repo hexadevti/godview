@@ -1,6 +1,7 @@
 // Bottom control bar: scenario picker, play/pause, speed, reset, and the
 // simulated clock (1 tick = 1 week).
 
+import { useI18n } from "../i18n/i18n";
 import { SCENARIOS } from "../sim/engine";
 import { useSim } from "../state/store";
 
@@ -9,6 +10,7 @@ const SPEEDS = [1, 2, 4];
 export function Timeline() {
   const { running, speed, scenarioId, world, play, pause, reset, setSpeed, setScenario, setCommodity } =
     useSim();
+  const { t } = useI18n();
 
   const years = Math.floor(world.tick / 52);
   const weeks = world.tick % 52;
@@ -22,11 +24,11 @@ export function Timeline() {
         value={scenarioId}
         onChange={(e) => setScenario(e.target.value)}
         className="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-sm text-slate-200 focus:outline-none"
-        title="Cenário inicial"
+        title={t("timeline.scenarioTitle")}
       >
         {SCENARIOS.map((s) => (
           <option key={s.id} value={s.id}>
-            {s.label}
+            {t(`scenario.${s.id}.label`)}
           </option>
         ))}
       </select>
@@ -36,7 +38,7 @@ export function Timeline() {
       <button
         onClick={() => (running ? pause() : play())}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-white hover:bg-sky-400"
-        title={running ? "Pausar" : "Rodar"}
+        title={running ? t("timeline.pause") : t("timeline.play")}
       >
         {running ? "⏸" : "▶"}
       </button>
@@ -58,9 +60,9 @@ export function Timeline() {
       <button
         onClick={reset}
         className="rounded-md bg-slate-800 px-2.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-700"
-        title="Reiniciar cenário"
+        title={t("timeline.resetTitle")}
       >
-        ⟲ Reset
+        ⟲ {t("timeline.reset")}
       </button>
 
       <div className="h-6 w-px bg-slate-700" />
@@ -68,32 +70,30 @@ export function Timeline() {
       {/* Global commodity/energy price + shock event */}
       <button
         onClick={() => setCommodity(shocked ? 100 : 160)}
-        title={
-          shocked
-            ? "Normalizar o preço de commodities"
-            : "Disparar choque de commodities/energia (+60%): inflação sobe para todos; exportadores lucram"
-        }
+        title={shocked ? t("timeline.commodityNormalize") : t("timeline.commodityShock")}
         className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold ${
           shocked ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
         }`}
       >
         🛢️ {commodity.toFixed(0)}
-        <span className="text-[10px] font-normal text-slate-400">{shocked ? "· normalizar" : "· choque"}</span>
+        <span className="text-[10px] font-normal text-slate-400">
+          {shocked ? t("timeline.normalizeShort") : t("timeline.shockShort")}
+        </span>
       </button>
 
       {inCrisis > 0 && (
         <div
           className="flex items-center gap-1 rounded-md bg-rose-500/20 px-2 py-1.5 text-xs font-semibold text-rose-300"
-          title="Países em crise política (aprovação em colapso / instabilidade)"
+          title={t("timeline.crisisTitle")}
         >
-          ⚠ {inCrisis} em crise
+          ⚠ {t("timeline.inCrisis", { n: inCrisis })}
         </div>
       )}
 
       <div className="h-6 w-px bg-slate-700" />
 
-      <div className="min-w-[92px] text-right font-mono text-sm text-slate-300" title="Tempo simulado">
-        Ano {years} · S{weeks.toString().padStart(2, "0")}
+      <div className="min-w-[92px] text-right font-mono text-sm text-slate-300" title={t("timeline.clockTitle")}>
+        {t("timeline.clock", { y: years, w: weeks.toString().padStart(2, "0") })}
       </div>
     </div>
   );

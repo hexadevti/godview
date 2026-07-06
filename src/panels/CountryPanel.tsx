@@ -14,6 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useI18n } from "../i18n/i18n";
 import { useSim } from "../state/store";
 import type { CountryControls, CountryState } from "../sim/types";
 import type { HistoryPoint } from "../state/store";
@@ -21,13 +22,14 @@ import { HelpTip, PROVENANCE, type HelpId } from "./HelpTip";
 import { useDraggable, useResizable } from "./useDraggable";
 
 function Stat({ label, value, help }: { label: string; value: string; help?: HelpId }) {
+  const { lang } = useI18n();
   return (
     <div className="rounded-lg bg-slate-800/60 px-3 py-2">
       <div className="flex items-center text-[10px] uppercase tracking-wide text-slate-400">
         {label}
         {help && <HelpTip id={help} />}
       </div>
-      <div className="text-sm font-semibold text-slate-100" title={help ? PROVENANCE[help] : undefined}>
+      <div className="text-sm font-semibold text-slate-100" title={help ? PROVENANCE[lang][help] : undefined}>
         {value}
       </div>
     </div>
@@ -142,15 +144,17 @@ export function gdpPerCapita(gdpTri: number, popMillions: number): string {
 
 /** Prominent public-approval meter — the game score — with a crisis banner. */
 function ApprovalGauge({ country }: { country: CountryState }) {
+  const { t, lang } = useI18n();
+  const P = PROVENANCE[lang];
   const a = country.approval;
   const color = approvalColor(a);
   return (
     <div className="mb-4 rounded-xl border border-slate-800 bg-slate-900/40 p-3">
       <div className="mb-1 flex items-center justify-between">
         <span className="flex items-center text-xs font-semibold uppercase tracking-wide text-slate-300">
-          Aprovação pública<HelpTip id="approval" />
+          {t("cp.approvalPublic")}<HelpTip id="approval" />
         </span>
-        <span className="text-sm font-bold tabular-nums" style={{ color }} title={PROVENANCE.approval}>
+        <span className="text-sm font-bold tabular-nums" style={{ color }} title={P.approval}>
           {a.toFixed(0)}/100
         </span>
       </div>
@@ -159,15 +163,15 @@ function ApprovalGauge({ country }: { country: CountryState }) {
       </div>
       {country.inCrisis ? (
         <div className="mt-2 flex items-center gap-1.5 rounded-md bg-rose-500/15 px-2 py-1 text-[11px] font-semibold text-rose-300">
-          ⚠ Crise política — fuga de capital e instabilidade. Recupere a aprovação!
+          ⚠ {t("cp.crisisText")}
         </div>
       ) : (
         <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-500">
-          <span title={PROVENANCE.unrest} className="flex items-center">
-            Instabilidade {country.unrest.toFixed(0)}<HelpTip id="unrest" />
+          <span title={P.unrest} className="flex items-center">
+            {t("cp.instability")} {country.unrest.toFixed(0)}<HelpTip id="unrest" />
           </span>
-          <span title={PROVENANCE.wellbeing} className="flex items-center">
-            Bem-estar {country.wellbeing.toFixed(0)}<HelpTip id="wellbeing" />
+          <span title={P.wellbeing} className="flex items-center">
+            {t("cp.wellbeing")} {country.wellbeing.toFixed(0)}<HelpTip id="wellbeing" />
           </span>
         </div>
       )}
@@ -185,6 +189,7 @@ function CountryCard({
   resize: ReturnType<typeof useResizable>;
 }) {
   const { history, closeCountry, setControl } = useSim();
+  const { t } = useI18n();
   const hist = history[country.iso] ?? [];
   const change = (field: keyof CountryControls) => (v: number) => setControl(country.iso, field, v);
   const { pos, dragging, onPointerDown } = drag;
@@ -202,12 +207,12 @@ function CountryCard({
       >
         <div>
           <h2 className="text-lg font-bold text-white">{country.name}</h2>
-          <p className="text-[11px] text-slate-400">Arraste o título para mover · canto ↘ para redimensionar.</p>
+          <p className="text-[11px] text-slate-400">{t("cp.dragHint")}</p>
         </div>
         <button
           onClick={() => closeCountry(country.iso)}
           className="rounded-md px-2 py-1 text-slate-400 hover:bg-slate-800 hover:text-white"
-          title="Fechar"
+          title={t("common.close")}
         >
           ✕
         </button>
@@ -220,41 +225,41 @@ function CountryCard({
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="space-y-3">
           <div>
-            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Economia</div>
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{t("cp.economy")}</div>
             <div className="grid grid-cols-2 gap-2">
-              <Stat label="PIB" value={`$${country.gdp.toFixed(2)} tri`} help="gdp" />
-              <Stat label="PIB per capita" value={gdpPerCapita(country.gdp, country.population)} help="gdpPerCapita" />
-              <Stat label="Crescimento" value={`${country.gdpGrowthAnn.toFixed(1)}%`} help="growth" />
-              <Stat label="Inflação" value={`${country.inflationAnn.toFixed(1)}%`} help="inflation" />
-              <Stat label="População" value={formatPop(country.population)} help="population" />
-              <Stat label="Câmbio (índice)" value={country.fx.toFixed(1)} help="fx" />
-              <Stat label="Saldo comercial" value={`${country.tradeBalancePctGdp.toFixed(1)}% PIB`} help="trade" />
-              <Stat label="Juros" value={`${country.controls.policyRate.toFixed(2)}%`} help="rate" />
+              <Stat label={t("stat.gdp")} value={`$${country.gdp.toFixed(2)} ${t("unit.tri")}`} help="gdp" />
+              <Stat label={t("stat.gdpPerCapita")} value={gdpPerCapita(country.gdp, country.population)} help="gdpPerCapita" />
+              <Stat label={t("stat.growth")} value={`${country.gdpGrowthAnn.toFixed(1)}%`} help="growth" />
+              <Stat label={t("stat.inflation")} value={`${country.inflationAnn.toFixed(1)}%`} help="inflation" />
+              <Stat label={t("stat.population")} value={formatPop(country.population)} help="population" />
+              <Stat label={t("stat.fx")} value={country.fx.toFixed(1)} help="fx" />
+              <Stat label={t("stat.trade")} value={`${country.tradeBalancePctGdp.toFixed(1)}% ${t("unit.gdp")}`} help="trade" />
+              <Stat label={t("stat.rate")} value={`${country.controls.policyRate.toFixed(2)}%`} help="rate" />
             </div>
           </div>
           <div>
-            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Social & fiscal</div>
+            <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">{t("cp.socialFiscal")}</div>
             <div className="grid grid-cols-2 gap-2">
-              <Stat label="Desemprego" value={`${country.unemployment.toFixed(1)}%`} help="unemployment" />
-              <Stat label="Dívida pública" value={`${country.debtPctGdp.toFixed(0)}% PIB`} help="debt" />
-              <Stat label="Resultado fiscal" value={`${country.fiscalBalancePctGdp >= 0 ? "+" : ""}${country.fiscalBalancePctGdp.toFixed(1)}% PIB`} help="deficit" />
-              <Stat label="Risco (spread)" value={`+${country.sovereignSpread.toFixed(1)} p.p.`} help="spread" />
-              <Stat label="Desigualdade (Gini)" value={country.gini.toFixed(0)} help="gini" />
-              <Stat label="Pobreza" value={`${country.povertyPct.toFixed(0)}%`} help="poverty" />
-              <Stat label="Educação" value={`${country.education.toFixed(0)}/100`} help="education" />
+              <Stat label={t("stat.unemployment")} value={`${country.unemployment.toFixed(1)}%`} help="unemployment" />
+              <Stat label={t("stat.debt")} value={`${country.debtPctGdp.toFixed(0)}% ${t("unit.gdp")}`} help="debt" />
+              <Stat label={t("stat.deficit")} value={`${country.fiscalBalancePctGdp >= 0 ? "+" : ""}${country.fiscalBalancePctGdp.toFixed(1)}% ${t("unit.gdp")}`} help="deficit" />
+              <Stat label={t("stat.spread")} value={`+${country.sovereignSpread.toFixed(1)} p.p.`} help="spread" />
+              <Stat label={t("stat.gini")} value={country.gini.toFixed(0)} help="gini" />
+              <Stat label={t("stat.poverty")} value={`${country.povertyPct.toFixed(0)}%`} help="poverty" />
+              <Stat label={t("stat.education")} value={`${country.education.toFixed(0)}/100`} help="education" />
             </div>
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-3">
           <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Alavancas de política
+            {t("cp.levers")}
           </div>
-          <Lever label="Taxa de juros" unit="%" value={country.controls.policyRate} min={0} max={50} step={0.25} onChange={change("policyRate")} help="rate" />
-          <Lever label="Tarifa de importação" unit="%" value={country.controls.tariff} min={0} max={40} step={1} onChange={change("tariff")} help="tariff" />
-          <Lever label="Gasto público" unit="" value={country.controls.govSpending} min={0} max={100} step={1} onChange={change("govSpending")} help="gov" />
-          <Lever label="Carga tributária" unit="%" value={country.controls.taxRate} min={0} max={60} step={1} onChange={change("taxRate")} help="tax" />
-          <Lever label="Gasto social" unit="" value={country.controls.socialSpendShare} min={0} max={100} step={1} onChange={change("socialSpendShare")} help="social" />
+          <Lever label={t("lever.rate")} unit="%" value={country.controls.policyRate} min={0} max={50} step={0.25} onChange={change("policyRate")} help="rate" />
+          <Lever label={t("lever.tariff")} unit="%" value={country.controls.tariff} min={0} max={40} step={1} onChange={change("tariff")} help="tariff" />
+          <Lever label={t("lever.gov")} unit="" value={country.controls.govSpending} min={0} max={100} step={1} onChange={change("govSpending")} help="gov" />
+          <Lever label={t("lever.tax")} unit="%" value={country.controls.taxRate} min={0} max={60} step={1} onChange={change("taxRate")} help="tax" />
+          <Lever label={t("lever.social")} unit="" value={country.controls.socialSpendShare} min={0} max={100} step={1} onChange={change("socialSpendShare")} help="social" />
         </div>
       </div>
 
@@ -262,40 +267,40 @@ function CountryCard({
       <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
         <div>
           <div className="mb-1 text-xs font-semibold text-slate-300">
-            Inflação (<span className="text-rose-400">━</span>) e Crescimento (<span className="text-emerald-400">━</span>) — % a.a.
+            {t("chart.inflation")} (<span className="text-rose-400">━</span>) {t("common.and")} {t("chart.growth")} (<span className="text-emerald-400">━</span>) — {t("unit.perYear")}
           </div>
           <MiniChart
             data={hist}
             lines={[
-              { key: "inflation", color: "#fb7185", label: "Inflação" },
-              { key: "growth", color: "#34d399", label: "Crescimento" },
+              { key: "inflation", color: "#fb7185", label: t("chart.inflation") },
+              { key: "growth", color: "#34d399", label: t("chart.growth") },
             ]}
           />
         </div>
         <div>
           <div className="mb-1 text-xs font-semibold text-slate-300">
-            Desemprego (<span className="text-amber-400">━</span>) e Aprovação (<span className="text-sky-400">━</span>)
+            {t("chart.unemployment")} (<span className="text-amber-400">━</span>) {t("common.and")} {t("chart.approval")} (<span className="text-sky-400">━</span>)
           </div>
           <MiniChart
             data={hist}
             lines={[
-              { key: "unemployment", color: "#fbbf24", label: "Desemprego" },
-              { key: "approval", color: "#38bdf8", label: "Aprovação" },
+              { key: "unemployment", color: "#fbbf24", label: t("chart.unemployment") },
+              { key: "approval", color: "#38bdf8", label: t("chart.approval") },
             ]}
             domain={[0, 100]}
           />
         </div>
         <div>
           <div className="mb-1 text-xs font-semibold text-slate-300">
-            Dívida pública — % do PIB
+            {t("chart.publicDebtTitle")}
           </div>
-          <MiniChart data={hist} lines={[{ key: "debt", color: "#c084fc", label: "Dívida" }]} domain={["auto", "auto"]} />
+          <MiniChart data={hist} lines={[{ key: "debt", color: "#c084fc", label: t("chart.debt") }]} domain={["auto", "auto"]} />
         </div>
         <div>
           <div className="mb-1 text-xs font-semibold text-slate-300">
-            Câmbio — índice (100 = base; ↑ = moeda mais forte)
+            {t("chart.fxTitle")}
           </div>
-          <MiniChart data={hist} lines={[{ key: "fx", color: "#38bdf8", label: "Câmbio" }]} domain={["auto", "auto"]} />
+          <MiniChart data={hist} lines={[{ key: "fx", color: "#38bdf8", label: t("chart.fx") }]} domain={["auto", "auto"]} />
         </div>
       </div>
       </div>
@@ -303,7 +308,7 @@ function CountryCard({
       {/* Resize handle (bottom-right corner) */}
       <div
         onPointerDown={onResize}
-        title="Redimensionar"
+        title={t("common.resize")}
         className="absolute bottom-0 right-0 h-5 w-5 cursor-nwse-resize"
       >
         <div className="absolute bottom-1.5 right-1.5 h-2.5 w-2.5 border-b-2 border-r-2 border-slate-500" />

@@ -4,12 +4,14 @@
 // spaced) while growth/inflation read linearly.
 
 import { METRIC_SCALES, type Metric } from "../globe/metricScale";
+import { useI18n } from "../i18n/i18n";
 
 export function Legend({ metric }: { metric: Metric }) {
   const s = METRIC_SCALES[metric];
+  const { t } = useI18n();
   return (
     <div className="mt-1.5 w-[240px]">
-      <div className="mb-1 text-[10px] text-slate-400">{s.label}</div>
+      <div className="mb-1 text-[10px] text-slate-400">{t(`scale.${metric}`)}</div>
       <div
         className="h-2.5 w-full rounded-sm"
         style={{ background: `linear-gradient(to right, ${s.lo}, ${s.hi})` }}

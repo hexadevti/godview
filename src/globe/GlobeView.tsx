@@ -28,6 +28,7 @@ import topologyUrl from "../assets/textures/earth-topology.png";
 import waterUrl from "../assets/textures/earth-water.png";
 import nightUrl from "../assets/textures/earth-night-hi.jpg";
 import moonUrl from "../assets/textures/moon.jpg";
+import cloudsUrl from "../assets/textures/clouds.jpg";
 
 /** Globe base map (earth surface), independent of the choropleth metric. */
 export type BaseMap = "political" | "terrain" | "satellite" | "hydro" | "night" | "agora";
@@ -115,9 +116,11 @@ export type LayerState = Record<
   boolean
 >;
 
-// Near-real-time global cloud composite (equirectangular, CORS-enabled, updated
-// every ~3h). Fetched at runtime only when the clouds layer is on.
-const CLOUDS_URL = "https://clouds.matteason.co.uk/images/2048x1024/clouds.jpg";
+// Global cloud composite (equirectangular), bundled as a local asset so the app
+// stays fully self-contained with no third-party runtime dependency. This is a
+// static snapshot — to restore the near-real-time layer, point this back at
+// https://clouds.matteason.co.uk/images/2048x1024/clouds.jpg (CORS-enabled).
+const CLOUDS_URL = cloudsUrl;
 const SHADER_MODES: BaseMap[] = ["satellite", "night", "agora"];
 
 interface PathDatum {
