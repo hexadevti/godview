@@ -273,6 +273,8 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "unit.tri": { pt: "tri", en: "T", es: "bill." },
   "unit.gdp": { pt: "PIB", en: "GDP", es: "PIB" },
   "unit.perYear": { pt: "% a.a.", en: "%/yr", es: "% anual" },
+  "unit.bi": { pt: "bi", en: "bn", es: "mil M" },
+  "unit.mi": { pt: "mi", en: "M", es: "M" },
 };
 
 function interpolate(text: string, vars?: Record<string, string | number>): string {

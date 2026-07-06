@@ -14,6 +14,9 @@ import { G20_BY_ISO, G20_BY_NAME } from "../data/g20";
 import cablesData from "../data/generated/cables.json";
 import satsData from "../data/generated/satellites.json";
 import { WATERWAYS } from "../data/waterways";
+import { countryName } from "../i18n/countryNames";
+import { useI18n } from "../i18n/i18n";
+import { formatPop } from "../panels/CountryPanel";
 import { useSim } from "../state/store";
 import type { CountryState } from "../sim/types";
 import { sampleAt } from "./geo";
@@ -205,6 +208,7 @@ export function GlobeView({
   reliefScale?: number;
 }) {
   const { world, selectedIsos, openCountry, closeCountry } = useSim();
+  const { t, lang } = useI18n();
   const { ref, size } = useElementSize();
   const globeEl = useRef<GlobeMethods | undefined>(undefined);
   // Currently selected country (or null) — read by the per-frame vehicle loop.
@@ -687,18 +691,22 @@ export function GlobeView({
           polygonLabel={(f: object) => {
             const feat = f as CountryFeature;
             const d = g20Datum(feat);
-            if (!d) return `<div style="color:#94a3b8">${feat.properties.name}</div>`;
+            if (!d) {
+              const nm = countryName(featureIso(feat), lang, feat.properties.name);
+              return `<div style="color:#94a3b8">${nm}</div>`;
+            }
+            const nm = countryName(d.iso, lang, d.name);
             const c = byIso[d.iso];
-            if (!c) return `<b>${d.name}</b>`;
+            if (!c) return `<b>${nm}</b>`;
             return `
               <div style="font-family:system-ui;background:#0d1626;border:1px solid #22314f;padding:8px 10px;border-radius:8px;color:#e7ecf5">
-                <b>${c.name}</b>${c.inCrisis ? ' <span style="color:#f87171">⚠ crise</span>' : ""}<br/>
-                PIB: $${c.gdp.toFixed(2)} tri<br/>
-                População: ${c.population >= 1000 ? (c.population / 1000).toFixed(2) + " bi" : c.population.toFixed(1) + " mi"}<br/>
-                Crescimento: ${c.gdpGrowthAnn.toFixed(1)}%<br/>
-                Inflação: ${c.inflationAnn.toFixed(1)}%<br/>
-                Desemprego: ${c.unemployment.toFixed(1)}%<br/>
-                Aprovação: ${c.approval.toFixed(0)}/100
+                <b>${nm}</b>${c.inCrisis ? ` <span style="color:#f87171">⚠ ${t("common.inCrisis")}</span>` : ""}<br/>
+                ${t("stat.gdp")}: $${c.gdp.toFixed(2)} ${t("unit.tri")}<br/>
+                ${t("stat.population")}: ${formatPop(c.population, t)}<br/>
+                ${t("stat.growth")}: ${c.gdpGrowthAnn.toFixed(1)}%<br/>
+                ${t("stat.inflation")}: ${c.inflationAnn.toFixed(1)}%<br/>
+                ${t("stat.unemployment")}: ${c.unemployment.toFixed(1)}%<br/>
+                ${t("metric.approval")}: ${c.approval.toFixed(0)}/100
               </div>`;
           }}
           onPolygonClick={(f: object) => {

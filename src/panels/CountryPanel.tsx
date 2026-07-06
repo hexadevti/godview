@@ -14,7 +14,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { useI18n } from "../i18n/i18n";
+import { countryName } from "../i18n/countryNames";
+import { useI18n, type TFn } from "../i18n/i18n";
 import { useSim } from "../state/store";
 import type { CountryControls, CountryState } from "../sim/types";
 import type { HistoryPoint } from "../state/store";
@@ -126,9 +127,11 @@ function approvalColor(v: number) {
   return v < 25 ? "#ef4444" : v < 45 ? "#f59e0b" : "#22c55e";
 }
 
-/** Population in millions -> "1.41 bi" / "212 mi". */
-export function formatPop(millions: number): string {
-  return millions >= 1000 ? `${(millions / 1000).toFixed(2)} bi` : `${millions.toFixed(1)} mi`;
+/** Population in millions -> localized "1.41 bi" / "212 mi". */
+export function formatPop(millions: number, t: TFn): string {
+  return millions >= 1000
+    ? `${(millions / 1000).toFixed(2)} ${t("unit.bi")}`
+    : `${millions.toFixed(1)} ${t("unit.mi")}`;
 }
 
 /** GDP per capita in USD: GDP (tri USD) / population (millions) * 1e6. */
@@ -189,7 +192,7 @@ function CountryCard({
   resize: ReturnType<typeof useResizable>;
 }) {
   const { history, closeCountry, setControl } = useSim();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const hist = history[country.iso] ?? [];
   const change = (field: keyof CountryControls) => (v: number) => setControl(country.iso, field, v);
   const { pos, dragging, onPointerDown } = drag;
@@ -206,7 +209,7 @@ function CountryCard({
         className={`flex flex-none items-start justify-between p-4 pb-2 ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
       >
         <div>
-          <h2 className="text-lg font-bold text-white">{country.name}</h2>
+          <h2 className="text-lg font-bold text-white">{countryName(country.iso, lang, country.name)}</h2>
           <p className="text-[11px] text-slate-400">{t("cp.dragHint")}</p>
         </div>
         <button
@@ -231,7 +234,7 @@ function CountryCard({
               <Stat label={t("stat.gdpPerCapita")} value={gdpPerCapita(country.gdp, country.population)} help="gdpPerCapita" />
               <Stat label={t("stat.growth")} value={`${country.gdpGrowthAnn.toFixed(1)}%`} help="growth" />
               <Stat label={t("stat.inflation")} value={`${country.inflationAnn.toFixed(1)}%`} help="inflation" />
-              <Stat label={t("stat.population")} value={formatPop(country.population)} help="population" />
+              <Stat label={t("stat.population")} value={formatPop(country.population, t)} help="population" />
               <Stat label={t("stat.fx")} value={country.fx.toFixed(1)} help="fx" />
               <Stat label={t("stat.trade")} value={`${country.tradeBalancePctGdp.toFixed(1)}% ${t("unit.gdp")}`} help="trade" />
               <Stat label={t("stat.rate")} value={`${country.controls.policyRate.toFixed(2)}%`} help="rate" />

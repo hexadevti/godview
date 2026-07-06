@@ -3,6 +3,7 @@
 // columns; clicking a row opens that country's inspector card.
 
 import { useState } from "react";
+import { countryName } from "../i18n/countryNames";
 import { useI18n } from "../i18n/i18n";
 import { useSim } from "../state/store";
 import type { CountryState } from "../sim/types";
@@ -62,8 +63,8 @@ export function WorldTable({ onClose, scope }: { onClose: () => void; scope: Set
   // Only the in-scope countries (G7 / Emergentes / G20 / Todos).
   const scoped = world.countries.filter((c) => scope.has(c.iso));
   const rows = [...scoped].sort((a, b) => {
-    const va = val(a, sortKey);
-    const vb = val(b, sortKey);
+    const va = sortKey === "name" ? countryName(a.iso, lang, a.name) : val(a, sortKey);
+    const vb = sortKey === "name" ? countryName(b.iso, lang, b.name) : val(b, sortKey);
     const cmp = typeof va === "string" ? va.localeCompare(vb as string) : (va as number) - (vb as number);
     return asc ? cmp : -cmp;
   });
@@ -116,7 +117,7 @@ export function WorldTable({ onClose, scope }: { onClose: () => void; scope: Set
         </div>
         <div className="rounded-lg bg-slate-800/60 px-3 py-2">
           <div className="flex items-center text-[10px] uppercase tracking-wide text-slate-400">{t("agg.population")}<HelpTip id="population" /></div>
-          <div title={P.population} className="text-sm font-semibold text-slate-100">{formatPop(totalPop)}</div>
+          <div title={P.population} className="text-sm font-semibold text-slate-100">{formatPop(totalPop, t)}</div>
         </div>
         <div className="rounded-lg bg-slate-800/60 px-3 py-2">
           <div className="flex items-center text-[10px] uppercase tracking-wide text-slate-400">{t("agg.growthAvg")}<HelpTip id="growthAvg" /></div>
@@ -178,10 +179,10 @@ export function WorldTable({ onClose, scope }: { onClose: () => void; scope: Set
               >
                 <td className="py-1.5 text-left font-medium text-slate-100">
                   {c.inCrisis && <span title={t("common.inCrisis")} className="mr-1">⚠</span>}
-                  {c.name}
+                  {countryName(c.iso, lang, c.name)}
                 </td>
                 <td title={P.gdp} className="py-1.5 text-right tabular-nums text-slate-200">{c.gdp.toFixed(2)}</td>
-                <td title={P.population} className="py-1.5 text-right tabular-nums text-slate-300">{formatPop(c.population)}</td>
+                <td title={P.population} className="py-1.5 text-right tabular-nums text-slate-300">{formatPop(c.population, t)}</td>
                 <td title={P.gdpPerCapita} className="py-1.5 text-right tabular-nums text-slate-200">{gdpPerCapita(c.gdp, c.population)}</td>
                 <td title={P.growth} className={`py-1.5 text-right tabular-nums ${growthColor(c.gdpGrowthAnn)}`}>{c.gdpGrowthAnn.toFixed(1)}%</td>
                 <td title={P.inflation} className={`py-1.5 text-right tabular-nums ${inflColor(c.inflationAnn)}`}>{c.inflationAnn.toFixed(1)}%</td>
