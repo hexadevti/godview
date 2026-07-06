@@ -12,13 +12,19 @@
 </p>
 
 <p align="center">
+  <a href="https://godview.hexadevit.com/"><img alt="Live demo" src="https://img.shields.io/badge/▶_live_demo-godview.hexadevit.com-0aa5ff"></a>
   <img alt="React 19" src="https://img.shields.io/badge/React-19-149eca">
   <img alt="Vite 6" src="https://img.shields.io/badge/Vite-6-646cff">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.7-3178c6">
   <img alt="No backend" src="https://img.shields.io/badge/backend-none-22c55e">
 </p>
 
-> **Note:** The in-app UI is in **Portuguese** (`pt-BR`). The model is a *stylized,
+<p align="center">
+  <strong>🌐 Live demo: <a href="https://godview.hexadevit.com/">godview.hexadevit.com</a></strong>
+</p>
+
+> **Note:** The in-app UI is **multilingual** — Portuguese, English and Spanish,
+> auto-detected from the browser and switchable in-app. The model is a *stylized,
 > educational* simulation — directionally sensible, **not predictive**.
 
 ---
@@ -56,6 +62,8 @@ in a Web Worker and all data ships as static, version-controlled snapshots.
 - **Per-country panel** to adjust levers and see the internal transport mesh.
 - **Real starting data** — a World Bank macro snapshot plus real transport routes
   (sea lanes via `searoute`, great-circle air routes), bilateral trade, and more.
+- **Multilingual UI** — Portuguese, English and Spanish, auto-detected from the
+  browser and switchable in-app, including localized country names.
 
 ## The simulation model
 
@@ -135,6 +143,7 @@ src/
   globe/             # GlobeView, route geometry, shaders, metric scales
   sim/               # tick engine, types, Web Worker, tests
   panels/            # country panel, world table, timeline, legend
+  i18n/              # i18n dictionary (pt/en/es) + localized country names
   state/             # simulation context/store
   data/              # generated static snapshots (countries, trade, routes…)
   assets/textures/   # bundled Earth / cloud / moon textures
@@ -142,22 +151,37 @@ scripts/             # offline data-ingestion scripts
 plan.md              # product plan & feasibility study (pt-BR)
 ```
 
-## Deployment (Cloudflare Pages)
+## Deployment (Cloudflare Workers Static Assets)
 
-The app is a fully static SPA — no server required. Config is checked in:
-[wrangler.toml](wrangler.toml) (output dir), [public/_redirects](public/_redirects)
-(SPA fallback), and [.node-version](.node-version) (Node 20).
+Live at **[godview.hexadevit.com](https://godview.hexadevit.com/)**.
 
-**Git-connected (push-to-deploy, recommended):** connect the repo in the Cloudflare
-dashboard → Pages → *Create project*. Build command `npm run build`, output
-directory `dist` (auto-detected from `wrangler.toml`).
+The app is a fully static SPA — no server, no backend. It's served via
+**Cloudflare Workers Static Assets** (assets-only, no Worker script), configured
+entirely in [wrangler.toml](wrangler.toml):
 
-**Direct upload:**
+```toml
+name = "godview"
+compatibility_date = "2026-07-06"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"  # SPA routing fallback
+```
+
+**Git-connected (push-to-deploy):** the GitHub repo is connected in the Cloudflare
+dashboard (Workers & Pages). On every push to `main`, Cloudflare runs `npm run build`
+(Node pinned by [.node-version](.node-version)) then `npx wrangler deploy`, which
+uploads `./dist`.
+
+**Manual deploy:**
 
 ```bash
 npm run build
-npx wrangler pages deploy dist
+npx wrangler deploy      # requires `wrangler login` or CLOUDFLARE_API_TOKEN
 ```
+
+> Your `.env` (`COMTRADE_KEY`) is git-ignored and only used by the offline ingest
+> scripts — it never reaches the client bundle, so nothing secret is published.
 
 ## Status
 
