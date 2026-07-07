@@ -11,7 +11,7 @@ export function Legend({ metric }: { metric: Metric }) {
   const { t } = useI18n();
   return (
     <div className="mt-1.5 w-[240px]">
-      <div className="mb-1 text-[10px] text-slate-400">{t(`scale.${metric}`)}</div>
+      <div className="mb-1 text-[0.625rem] text-slate-400">{t(`scale.${metric}`)}</div>
       <div
         className="h-2.5 w-full rounded-sm"
         style={{ background: `linear-gradient(to right, ${s.lo}, ${s.hi})` }}
@@ -25,7 +25,7 @@ export function Legend({ metric }: { metric: Metric }) {
           return (
             <span
               key={v}
-              className="absolute top-0 text-[9px] tabular-nums text-slate-400"
+              className="absolute top-0 text-[0.5625rem] tabular-nums text-slate-400"
               style={{ left: `${t * 100}%`, transform: align }}
             >
               {s.fmt(v)}

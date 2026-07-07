@@ -14,6 +14,10 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { resolveHdi } from "./hdi-data.mjs";
+import { resolveCostOfLiving } from "./cost-of-living-data.mjs";
+import { resolveCompetitiveness } from "./competitiveness-data.mjs";
+import { resolveExtraIndices } from "./extra-indices-data.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(__dirname, "../src/data/generated/g20-snapshot.json");
@@ -212,6 +216,23 @@ async function main() {
       : 48;
     const education0 = round(hlos != null ? clamp((hlos - 300) / 3, 5, 100) : eduFallback, 0);
 
+    // Human Development Index (UNDP 2022): curated table by iso3, with a coarse
+    // education+income fallback for any country the table doesn't cover.
+    const hdi0 = resolveHdi(k, education0, perCap);
+
+    // Cost of Living index (Numbeo-style, NYC=100): curated table by iso3, with
+    // a GDP-per-capita fallback for any country the table doesn't cover.
+    const costOfLiving0 = resolveCostOfLiving(k, perCap);
+
+    // Global Competitiveness Index (WEF GCI 4.0, 2019): curated table by iso3,
+    // with an HDI-based fallback for economies the WEF didn't rank.
+    const gci0 = resolveCompetitiveness(k, hdi0);
+
+    // Six governance / wellbeing indices (Economic Freedom, CPI, Democracy,
+    // Press Freedom, Social Progress, Happiness): curated tables by iso3, with
+    // HDI-based fallbacks. Returns { econFreedom0, cpi0, democracy0, ... }.
+    const extraIndices = resolveExtraIndices(k, hdi0);
+
     const exportShare = latest(exp[k]);
     const importShare = latest(imp[k]);
 
@@ -240,6 +261,10 @@ async function main() {
       approval0,
       commodityExporter,
       education0,
+      hdi0,
+      costOfLiving0,
+      gci0,
+      ...extraIndices,
       _g20: isG20,
       _gdpYear: latestYear(gdp[k]),
     });
@@ -257,7 +282,13 @@ async function main() {
         "GDP/inflation/growth/trade shares, unemployment, population, pop. growth, dependency, and " +
         "(where covered) Gini/debt/tax/poverty are real World Bank data. G20 monetary anchors " +
         "(rate0/neutralRate/inflTarget) and social anchors (debt/Gini/poverty/tax/approval/commodity) " +
-        "are curated; other countries get derived defaults.",
+        "are curated; other countries get derived defaults. HDI (hdi0) is UNDP 2022 (Human " +
+        "Development Report 2023/24), curated by iso3 — the World Bank API does not publish it. " +
+        "Cost of Living (costOfLiving0) is a Numbeo-style index (NYC=100), curated by iso3. " +
+        "GCI (gci0) is the WEF Global Competitiveness Index 4.0 (2019), curated by iso3. " +
+        "econFreedom0 (Heritage 2024), cpi0 (Transparency Int'l 2023), democracy0 (EIU 2023), " +
+        "pressFreedom0 (RSF 2024), spi0 (Social Progress 2023) and happiness0 (WHR 2024) are " +
+        "curated by iso3 with HDI-based fallbacks.",
     },
     countries,
   };

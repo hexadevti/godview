@@ -6,8 +6,9 @@
 import type { CountryState } from "../sim/types";
 
 export type Metric =
-  | "gdp" | "growth" | "inflation" | "unemployment" | "inequality" | "approval"
-  | "gdpPerCapita" | "population" | "education";
+  | "gdp" | "growth" | "inflation" | "unemployment" | "inequality"
+  | "gdpPerCapita" | "population" | "education" | "hdi" | "costOfLiving" | "gci"
+  | "econFreedom" | "cpi" | "democracy" | "pressFreedom" | "spi" | "happiness";
 
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 
@@ -87,15 +88,6 @@ export const METRIC_SCALES: Record<Metric, MetricScale> = {
     ticks: [25, 35, 45, 55, 65],
     fmt: (v) => `${v}`,
   },
-  approval: {
-    label: "Aprovação — índice 0–100",
-    lo: "#ef4444",
-    hi: "#22c55e",
-    value: (c) => c.approval,
-    t: (v) => clamp01(v / 100),
-    ticks: [0, 25, 50, 75, 100],
-    fmt: (v) => `${v}`,
-  },
   gdpPerCapita: {
     label: "PIB per capita — US$ (escala log)",
     lo: "#052e16",
@@ -122,6 +114,87 @@ export const METRIC_SCALES: Record<Metric, MetricScale> = {
     t: (v) => clamp01(v / 100),
     ticks: [0, 25, 50, 75, 100],
     fmt: (v) => `${v}`,
+  },
+  hdi: {
+    label: "IDH — índice 0–1 (ONU)",
+    lo: "#7f1d1d",
+    hi: "#34d399",
+    value: (c) => c.hdi,
+    t: (v) => clamp01((v - 0.35) / 0.62),
+    ticks: [0.4, 0.55, 0.7, 0.85, 1],
+    fmt: (v) => v.toFixed(2),
+  },
+  costOfLiving: {
+    label: "Custo de vida — índice (NY=100)",
+    lo: "#134e4a",
+    hi: "#fbbf24",
+    value: (c) => c.costOfLiving,
+    t: (v) => clamp01((v - 20) / 85),
+    ticks: [25, 45, 65, 85, 105],
+    fmt: (v) => `${v.toFixed(0)}`,
+  },
+  gci: {
+    label: "Competitividade — índice 0–100 (FEM)",
+    lo: "#1e1b4b",
+    hi: "#818cf8",
+    value: (c) => c.gci,
+    t: (v) => clamp01((v - 30) / 55),
+    ticks: [35, 50, 65, 80],
+    fmt: (v) => `${v.toFixed(0)}`,
+  },
+  econFreedom: {
+    label: "Liberdade econômica — índice 0–100",
+    lo: "#7c2d12",
+    hi: "#facc15",
+    value: (c) => c.econFreedom,
+    t: (v) => clamp01((v - 20) / 70),
+    ticks: [30, 50, 70, 90],
+    fmt: (v) => `${v.toFixed(0)}`,
+  },
+  cpi: {
+    label: "Percepção da corrupção (IPC) — 0–100",
+    lo: "#7f1d1d",
+    hi: "#2dd4bf",
+    value: (c) => c.cpi,
+    t: (v) => clamp01(v / 100),
+    ticks: [10, 30, 50, 70, 90],
+    fmt: (v) => `${v.toFixed(0)}`,
+  },
+  democracy: {
+    label: "Democracia — índice 0–10 (EIU)",
+    lo: "#7f1d1d",
+    hi: "#60a5fa",
+    value: (c) => c.democracy,
+    t: (v) => clamp01(v / 10),
+    ticks: [2, 4, 6, 8, 10],
+    fmt: (v) => v.toFixed(1),
+  },
+  pressFreedom: {
+    label: "Liberdade de imprensa — 0–100 (RSF)",
+    lo: "#7f1d1d",
+    hi: "#38bdf8",
+    value: (c) => c.pressFreedom,
+    t: (v) => clamp01(v / 100),
+    ticks: [20, 40, 60, 80],
+    fmt: (v) => `${v.toFixed(0)}`,
+  },
+  spi: {
+    label: "Progresso social (SPI) — 0–100",
+    lo: "#3f1d38",
+    hi: "#4ade80",
+    value: (c) => c.spi,
+    t: (v) => clamp01((v - 25) / 72),
+    ticks: [30, 50, 70, 90],
+    fmt: (v) => `${v.toFixed(0)}`,
+  },
+  happiness: {
+    label: "Felicidade global — 0–10 (WHR)",
+    lo: "#334155",
+    hi: "#fbbf24",
+    value: (c) => c.happiness,
+    t: (v) => clamp01((v - 2) / 6),
+    ticks: [3, 4, 5, 6, 7],
+    fmt: (v) => v.toFixed(1),
   },
 };
 

@@ -13,6 +13,7 @@ import { DATACENTERS } from "../data/datacenters";
 import { G20_BY_ISO, G20_BY_NAME } from "../data/g20";
 import cablesData from "../data/generated/cables.json";
 import satsData from "../data/generated/satellites.json";
+import flightsData from "../data/generated/flights-snapshot.json";
 import { WATERWAYS } from "../data/waterways";
 import { countryName } from "../i18n/countryNames";
 import { useI18n } from "../i18n/i18n";
@@ -20,7 +21,7 @@ import { formatPop } from "../panels/CountryPanel";
 import { useSim } from "../state/store";
 import type { CountryState } from "../sim/types";
 import { sampleAt } from "./geo";
-import { metricColor, type Metric } from "./metricScale";
+import { METRIC_SCALES, metricColor, type Metric } from "./metricScale";
 import { ROUTES, buildVehicles, routeAltitude, type RouteKind } from "./routes";
 import { makePlane, makeShip, makeTrain, makeTruck } from "./vehicleMesh";
 // Earth textures — bundled offline by Vite. Day (NASA Blue Marble 5400×2700) and
@@ -115,7 +116,7 @@ const PATH_COLORS: Record<PathKind, string> = {
 };
 
 export type LayerState = Record<
-  RouteKind | "cities" | "cables" | "rivers" | "datacenters" | "satellites" | "clouds" | "sky",
+  RouteKind | "cities" | "cables" | "rivers" | "datacenters" | "satellites" | "clouds" | "sky" | "flights",
   boolean
 >;
 
@@ -630,6 +631,152 @@ export function GlobeView({
     };
   }, [ready]);
 
+  // Flights: a bundled global snapshot (~7k airborne aircraft, OpenSky) drawn as
+  // a single THREE.Points cloud. NOT real time — each aircraft is gently
+  // dead-reckoned forward from its snapshot position (track + speed, time-warped
+  // for visible motion) and the whole fleet resets to the snapshot on a loop, so
+  // it reads as a living planet without any runtime API calls. Colored by
+  // altitude (low = amber, cruise = pale cyan).
+  useEffect(() => {
+    const globe = globeEl.current;
+    if (!globe) return;
+    const scene = globe.scene();
+    const raw = flightsData.flights as number[][]; // [lat, lng, track, velMs, altKm]
+    const n = raw.length;
+    if (n === 0) return;
+
+    const origLat = new Float32Array(n), origLng = new Float32Array(n);
+    const curLat = new Float32Array(n), curLng = new Float32Array(n);
+    const track = new Float32Array(n), vel = new Float32Array(n), altKm = new Float32Array(n);
+    const colors = new Float32Array(n * 3);
+    const cLow = new THREE.Color(0xfbbf24), cHigh = new THREE.Color(0xbae6fd);
+    for (let i = 0; i < n; i++) {
+      const [la, ln, tr, ve, al] = raw[i];
+      origLat[i] = curLat[i] = la; origLng[i] = curLng[i] = ln;
+      track[i] = tr; vel[i] = ve; altKm[i] = al;
+      const c = al < 3 ? cLow : cHigh;
+      colors.set([c.r, c.g, c.b], i * 3);
+    }
+
+    const geom = new THREE.BufferGeometry();
+    const positions = new Float32Array(n * 3);
+    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    const mat = new THREE.PointsMaterial({ size: 1.1, vertexColors: true, sizeAttenuation: true });
+    const points = new THREE.Points(geom, mat);
+    points.frustumCulled = false;
+    scene.add(points);
+    const posAttr = geom.getAttribute("position") as THREE.BufferAttribute;
+
+    const SPEED = 30; // time-warp so ~250 m/s cruise is perceptible on the globe
+    const LOOP_MS = 90_000; // reset to the snapshot every 90s to bound drift
+    const DEG = Math.PI / 180;
+    let lastT = performance.now();
+    let loopStart = lastT;
+    let raf = 0;
+    const step = () => {
+      const now = performance.now();
+      points.visible = layersRef.current.flights;
+      if (points.visible) {
+        const dt = ((now - lastT) / 1000) * SPEED; // warped seconds since last frame
+        if (now - loopStart > LOOP_MS) {
+          curLat.set(origLat); curLng.set(origLng); loopStart = now;
+        }
+        for (let i = 0; i < n; i++) {
+          const latRad = curLat[i] * DEG;
+          const north = vel[i] * Math.cos(track[i] * DEG); // m/s
+          const east = vel[i] * Math.sin(track[i] * DEG);
+          curLat[i] += (north * dt) / 111320;
+          curLng[i] += (east * dt) / (111320 * Math.max(0.1, Math.cos(latRad)));
+          if (curLng[i] > 180) curLng[i] -= 360;
+          else if (curLng[i] < -180) curLng[i] += 360;
+          const p = globe.getCoords(curLat[i], curLng[i], 0.005 + altKm[i] * 0.0004);
+          posAttr.setXYZ(i, p.x, p.y, p.z);
+        }
+        posAttr.needsUpdate = true;
+      }
+      lastT = now;
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => {
+      cancelAnimationFrame(raf);
+      scene.remove(points);
+      geom.dispose();
+      mat.dispose();
+    };
+  }, [ready]);
+
+  // Live flights (zoom-in tier): OPTIONAL, off unless VITE_FLIGHTS_PROXY points at
+  // a same-origin proxy (see worker/flights.mjs) — the free feeds block direct
+  // browser calls (no CORS), so a tiny Worker relays + caches them. To avoid rate
+  // limits/blocks we only poll when the user is zoomed in and the flights layer is
+  // on, throttled, over just the visible bounding box. Rendered as brighter red
+  // points on top of the ambient snapshot. Fail-safe: any error is ignored.
+  useEffect(() => {
+    const proxy = (import.meta.env as Record<string, string | undefined>).VITE_FLIGHTS_PROXY;
+    const globe = globeEl.current;
+    if (!globe || !proxy) return; // live tier disabled → ambient snapshot only
+    const scene = globe.scene();
+    let points: THREE.Points | null = null;
+    let geom: THREE.BufferGeometry | null = null;
+    let mat: THREE.PointsMaterial | null = null;
+    let stopped = false;
+
+    const ZOOM_ALT = 0.6; // only fetch when closer than this camera altitude
+    const POLL_MS = 20_000; // throttle between viewport fetches
+
+    const clearLive = () => {
+      if (points) { scene.remove(points); geom?.dispose(); mat?.dispose(); points = null; }
+    };
+    const renderLive = (list: number[][]) => {
+      clearLive();
+      const n = list.length;
+      if (n === 0) return;
+      geom = new THREE.BufferGeometry();
+      const pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        const [la, ln, , , al] = list[i];
+        const p = globe.getCoords(la, ln, 0.006 + (al || 0) * 0.0004);
+        pos.set([p.x, p.y, p.z], i * 3);
+      }
+      geom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      mat = new THREE.PointsMaterial({ size: 2.4, color: 0xf87171, sizeAttenuation: true });
+      points = new THREE.Points(geom, mat);
+      points.frustumCulled = false;
+      scene.add(points);
+    };
+
+    const poll = async () => {
+      if (stopped) return;
+      const pov = globe.pointOfView();
+      if (layersRef.current.flights && pov.altitude < ZOOM_ALT) {
+        const span = Math.min(30, Math.max(2, pov.altitude * 60));
+        const q = new URLSearchParams({
+          lamin: Math.max(-90, pov.lat - span).toFixed(2),
+          lomin: (pov.lng - span).toFixed(2),
+          lamax: Math.min(90, pov.lat + span).toFixed(2),
+          lomax: (pov.lng + span).toFixed(2),
+        });
+        try {
+          const res = await fetch(`${proxy}?${q}`);
+          if (res.ok) renderLive(((await res.json()).flights as number[][]) || []);
+        } catch {
+          /* ignore — fail-safe, ambient snapshot remains */
+        }
+      } else {
+        clearLive();
+      }
+      if (!stopped) timer = window.setTimeout(poll, POLL_MS);
+    };
+    let timer = window.setTimeout(poll, 1500);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      clearLive();
+    };
+  }, [ready]);
+
   const g20Datum = (f: CountryFeature) =>
     G20_BY_ISO[featureIso(f)] ?? G20_BY_NAME[f.properties.name];
 
@@ -667,8 +814,6 @@ export function GlobeView({
             if (!scope.has(d.iso)) return "#16233a"; // out of scope: dimmed
             const c = byIso[d.iso];
             if (!c) return NON_G20_COLOR;
-            // Countries in political crisis pulse red (blinks while the sim runs).
-            if (c.inCrisis) return world.tick % 2 === 0 ? "#ef4444" : "#7f1d1d";
             const base = metricColor(metric, c);
             // Highlight the selected country by brightening its fill a touch (no
             // raise). Kept subtle so internal road/rail lines stay high-contrast.
@@ -698,15 +843,34 @@ export function GlobeView({
             const nm = countryName(d.iso, lang, d.name);
             const c = byIso[d.iso];
             if (!c) return `<b>${nm}</b>`;
+            // Highlighted header: the metric currently selected in the picker,
+            // formatted with the same scale used by the choropleth and legend.
+            const scale = METRIC_SCALES[metric];
+            const selColor = metricColor(metric, c);
+            const selRow = `
+              <div style="margin-top:4px;padding:3px 6px;border-radius:5px;background:#111c30;border-left:3px solid ${selColor};font-weight:600">
+                <span style="color:#94a3b8;font-weight:400">${t(`metric.${metric}`)}:</span> ${scale.fmt(scale.value(c))}
+              </div>`;
             return `
               <div style="font-family:system-ui;background:#0d1626;border:1px solid #22314f;padding:8px 10px;border-radius:8px;color:#e7ecf5">
-                <b>${nm}</b>${c.inCrisis ? ` <span style="color:#f87171">⚠ ${t("common.inCrisis")}</span>` : ""}<br/>
+                <b>${nm}</b>
+                ${selRow}
+                <div style="margin-top:5px">
                 ${t("stat.gdp")}: $${c.gdp.toFixed(2)} ${t("unit.tri")}<br/>
                 ${t("stat.population")}: ${formatPop(c.population, t)}<br/>
                 ${t("stat.growth")}: ${c.gdpGrowthAnn.toFixed(1)}%<br/>
                 ${t("stat.inflation")}: ${c.inflationAnn.toFixed(1)}%<br/>
                 ${t("stat.unemployment")}: ${c.unemployment.toFixed(1)}%<br/>
-                ${t("metric.approval")}: ${c.approval.toFixed(0)}/100
+                ${t("stat.hdi")}: ${c.hdi.toFixed(3)}<br/>
+                ${t("stat.costOfLiving")}: ${c.costOfLiving.toFixed(0)}<br/>
+                ${t("stat.gci")}: ${c.gci.toFixed(1)}<br/>
+                ${t("stat.happiness")}: ${c.happiness.toFixed(1)}<br/>
+                ${t("stat.democracy")}: ${c.democracy.toFixed(1)}<br/>
+                ${t("stat.cpi")}: ${c.cpi.toFixed(0)}<br/>
+                ${t("stat.spi")}: ${c.spi.toFixed(0)}<br/>
+                ${t("stat.econFreedom")}: ${c.econFreedom.toFixed(0)}<br/>
+                ${t("stat.pressFreedom")}: ${c.pressFreedom.toFixed(0)}
+                </div>
               </div>`;
           }}
           onPolygonClick={(f: object) => {

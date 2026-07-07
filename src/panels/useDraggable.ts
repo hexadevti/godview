@@ -39,8 +39,9 @@ export function useDraggable(initialX: number, initialY: number) {
 }
 
 /** Makes a panel resizable via a corner handle. Returns the current size and an
- *  `onPointerDown` to attach to the resize handle. */
-export function useResizable(initialW: number, initialH: number) {
+ *  `onPointerDown` to attach to the resize handle. `maxW` defaults to 1100 but
+ *  can be raised for wide panels (e.g. the world table's many columns). */
+export function useResizable(initialW: number, initialH: number, maxW = 1100) {
   const [size, setSize] = useState({ w: initialW, h: initialH });
   const start = useRef<{ px: number; py: number; ow: number; oh: number } | null>(null);
 
@@ -52,7 +53,7 @@ export function useResizable(initialW: number, initialH: number) {
     const onMove = (ev: PointerEvent) => {
       if (!start.current) return;
       setSize({
-        w: Math.min(1100, Math.max(300, start.current.ow + (ev.clientX - start.current.px))),
+        w: Math.min(maxW, Math.max(320, start.current.ow + (ev.clientX - start.current.px))),
         h: Math.min(window.innerHeight - 32, Math.max(300, start.current.oh + (ev.clientY - start.current.py))),
       });
     };

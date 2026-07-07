@@ -18,6 +18,22 @@ export interface CountryControls {
   taxRate: number;
   /** Share of spending directed to redistribution, 0..100 (50 = neutral). */
   socialSpendShare: number;
+  /** Investment in infrastructure & innovation, 0..100 (50 = neutral). Lifts
+   *  competitiveness (GCI) and potential growth; costs fiscal space. */
+  infraInvest: number;
+  /** Cost-of-living subsidies (energy/food/transport), 0..100 (50 = neutral).
+   *  Eases cost of living and near-term inflation; widens the deficit. */
+  subsidies: number;
+  /** Investment in health & social wellbeing, 0..100 (50 = neutral). Raises the
+   *  human-development index (HDI) and wellbeing; costs fiscal space. */
+  healthInvest: number;
+  /** Institutional reform: rule of law, anti-corruption, democratic quality,
+   *  free press, 0..100 (50 = neutral). Lifts CPI, democracy, press freedom and
+   *  (partly) economic freedom + competitiveness; moves glacially. */
+  institutions: number;
+  /** Market liberalization & deregulation, 0..100 (50 = neutral). Lifts economic
+   *  freedom, competitiveness and growth, but widens inequality. */
+  marketFreedom: number;
 }
 
 /** Structural constants for a country — fixed for a given scenario snapshot. */
@@ -42,9 +58,17 @@ export interface CountryConst {
   popGrowth: number; // population growth, % per year
   dependencyRatio: number; // age dependency ratio, %
   taxBaseline: number; // baseline tax burden, % of GDP (neutral tax lever)
-  approval0: number; // starting public approval, 0..100
   commodityExporter: number; // net commodity exposure, -1 (importer) .. +1 (exporter)
   education0: number; // education quality index 0..100 (World Bank harmonized learning outcomes)
+  hdi0: number; // Human Development Index 0..1 (UNDP 2022)
+  costOfLiving0: number; // Cost of Living index, NYC=100 (Numbeo-style)
+  gci0: number; // Global Competitiveness Index 0..100 (WEF GCI 4.0 2019)
+  econFreedom0: number; // Index of Economic Freedom 0..100 (Heritage 2024)
+  cpi0: number; // Corruption Perceptions Index 0..100 (Transparency Int'l 2023)
+  democracy0: number; // Democracy Index 0..10 (EIU 2023)
+  pressFreedom0: number; // Press Freedom Index 0..100 (RSF 2024)
+  spi0: number; // Social Progress Index 0..100 (2023)
+  happiness0: number; // World Happiness Report score 0..10 (2024)
 }
 
 /** Mutable per-country state advanced each tick. */
@@ -61,16 +85,22 @@ export interface CountryState {
   debtPctGdp: number; // gross public debt, % of GDP
   gini: number; // inequality, Gini index (0..100)
   povertyPct: number; // poverty headcount, %
-  approval: number; // public approval / political capital, 0..100 (the game score)
   population: number; // millions
   education: number; // education quality index 0..100 (evolves with investment)
+  hdi: number; // Human Development Index 0..1 (evolves)
+  costOfLiving: number; // Cost of Living index, NYC=100 (evolves)
+  gci: number; // Global Competitiveness Index 0..100 (evolves)
+  econFreedom: number; // Index of Economic Freedom 0..100 (evolves)
+  cpi: number; // Corruption Perceptions Index 0..100 (evolves)
+  democracy: number; // Democracy Index 0..10 (evolves)
+  pressFreedom: number; // Press Freedom Index 0..100 (evolves)
+  spi: number; // Social Progress Index 0..100 (evolves)
+  happiness: number; // World Happiness score 0..10 (evolves)
   // ---- Derived each tick (kept on state for charts + display) ----
   fiscalBalancePctGdp: number; // budget balance, % of GDP (negative = deficit)
   sovereignSpread: number; // risk premium added to borrowing cost, p.p.
   unrest: number; // social unrest / instability, 0..100
   wellbeing: number; // composite wellbeing index, 0..100
-  inCrisis: boolean; // sustained collapse of approval / spike in unrest
-  crisisTimer: number; // consecutive ticks past the crisis threshold (internal)
   controls: CountryControls;
 }
 

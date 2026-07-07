@@ -16,7 +16,6 @@ export function Timeline() {
   const weeks = world.tick % 52;
   const commodity = world.commodityPrice;
   const shocked = commodity > 105;
-  const inCrisis = world.countries.filter((c) => c.inCrisis).length;
 
   return (
     <div className="pointer-events-auto absolute bottom-0 left-1/2 z-40 mb-4 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-slate-700/60 bg-[#0a0f1c]/55 px-4 py-2.5 shadow-xl backdrop-blur-lg">
@@ -76,19 +75,10 @@ export function Timeline() {
         }`}
       >
         🛢️ {commodity.toFixed(0)}
-        <span className="text-[10px] font-normal text-slate-400">
+        <span className="text-[0.625rem] font-normal text-slate-400">
           {shocked ? t("timeline.normalizeShort") : t("timeline.shockShort")}
         </span>
       </button>
-
-      {inCrisis > 0 && (
-        <div
-          className="flex items-center gap-1 rounded-md bg-rose-500/20 px-2 py-1.5 text-xs font-semibold text-rose-300"
-          title={t("timeline.crisisTitle")}
-        >
-          ⚠ {t("timeline.inCrisis", { n: inCrisis })}
-        </div>
-      )}
 
       <div className="h-6 w-px bg-slate-700" />
 

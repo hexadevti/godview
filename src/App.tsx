@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import logoUrl from "./assets/godview-logo.png";
 import { G20, SNAPSHOT_META } from "./data/g20";
 import { SCOPES } from "./data/scopes";
@@ -12,7 +12,8 @@ import { SCENARIOS } from "./sim/engine";
 import { SimProvider, useSim } from "./state/store";
 
 const METRICS: Metric[] = [
-  "gdp", "gdpPerCapita", "population", "growth", "inflation", "unemployment", "inequality", "education", "approval",
+  "gdp", "gdpPerCapita", "population", "growth", "inflation", "unemployment", "inequality", "education", "hdi", "costOfLiving", "gci",
+  "econFreedom", "cpi", "democracy", "pressFreedom", "spi", "happiness",
 ];
 
 const LAYER_DEFS: Array<{ id: keyof LayerState; color: string }> = [
@@ -23,6 +24,7 @@ const LAYER_DEFS: Array<{ id: keyof LayerState; color: string }> = [
   { id: "cities", color: "#e2e8f0" },
   { id: "cables", color: "#a78bfa" },
   { id: "rivers", color: "#60a5fa" },
+  { id: "flights", color: "#fbbf24" },
   { id: "datacenters", color: "#38bdf8" },
   { id: "satellites", color: "#67e8f9" },
   { id: "clouds", color: "#e2e8f0" },
@@ -42,7 +44,7 @@ function LanguageSwitcher() {
         <button
           key={l.id}
           onClick={() => setLang(l.id)}
-          className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+          className={`rounded px-1.5 py-0.5 text-[0.625rem] font-bold ${
             lang === l.id ? "bg-sky-500 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
           }`}
         >
@@ -53,15 +55,39 @@ function LanguageSwitcher() {
   );
 }
 
+/** Compact A− / % / A+ font-size switcher. Sets the root font-size so every
+ *  rem-based label, control and panel grows/shrinks proportionally (persisted). */
+function FontSizeSwitcher() {
+  const { t } = useI18n();
+  const [uiScale, setUiScale] = useState(() => {
+    const saved = Number(localStorage.getItem("gv-ui-scale"));
+    return saved >= 0.7 && saved <= 1.6 ? saved : 1;
+  });
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${(uiScale * 100).toFixed(2)}%`;
+    localStorage.setItem("gv-ui-scale", String(uiScale));
+  }, [uiScale]);
+  const change = (delta: number) =>
+    setUiScale((s) => Math.min(1.6, Math.max(0.7, Math.round((s + delta) * 100) / 100)));
+  const btn = "rounded bg-slate-800 px-1.5 py-0.5 font-bold text-slate-400 hover:bg-slate-700 disabled:opacity-40";
+  return (
+    <div className="flex items-center gap-0.5" title={t("app.fontSize")}>
+      <button onClick={() => change(-0.1)} disabled={uiScale <= 0.7} className={`${btn} text-[0.625rem]`} title={t("app.fontSmaller")}>A−</button>
+      <button onClick={() => setUiScale(1)} className={`${btn} text-[0.625rem] tabular-nums`} title={t("app.fontReset")}>{Math.round(uiScale * 100)}%</button>
+      <button onClick={() => change(0.1)} disabled={uiScale >= 1.6} className={`${btn} text-xs`} title={t("app.fontLarger")}>A+</button>
+    </div>
+  );
+}
+
 function Shell() {
   const [metric, setMetric] = useState<Metric>("gdp");
   const [baseMap, setBaseMap] = useState<BaseMap>("political");
   const [reliefScale, setReliefScale] = useState(6);
   const [showTable, setShowTable] = useState(false);
-  const [scopeId, setScopeId] = useState("g20");
+  const [scopeId, setScopeId] = useState("all");
   const [layers, setLayers] = useState<LayerState>({
     air: true, sea: true, road: true, rail: true, cities: true,
-    cables: false, rivers: false, datacenters: false, satellites: false, clouds: false, sky: false,
+    cables: false, rivers: false, datacenters: false, satellites: false, clouds: false, sky: false, flights: false,
   });
   const { scenarioId } = useSim();
   const { t } = useI18n();
@@ -82,12 +108,15 @@ function Shell() {
       <div className="pointer-events-auto absolute left-4 top-4 z-40 w-60 rounded-xl border border-slate-700/60 bg-[#0a0f1c]/55 px-4 py-2.5 backdrop-blur-lg">
         <div className="flex items-center justify-between gap-2">
           <img src={logoUrl} alt="GodView" className="h-9 w-auto" />
-          <LanguageSwitcher />
+          <div className="flex flex-col items-end gap-1">
+            <LanguageSwitcher />
+            <FontSizeSwitcher />
+          </div>
         </div>
         <p className="mt-1.5 text-xs text-slate-400">{t("app.subtitle")}</p>
         {scenario && <p className="mt-0.5 text-xs text-slate-400">{t(`scenario.${scenarioId}.note`)}</p>}
         {scenario?.objective && (
-          <p className="mt-1 rounded-md bg-sky-500/10 px-2 py-1 text-[11px] text-sky-300">
+          <p className="mt-1 rounded-md bg-sky-500/10 px-2 py-1 text-[0.6875rem] text-sky-300">
             🎯 {t(`scenario.${scenarioId}.objective`)}
           </p>
         )}
@@ -99,7 +128,7 @@ function Shell() {
         >
           📊 {showTable ? t("app.hideWorldTable") : t("app.worldTable")}
         </button>
-        <p className="mt-2 text-[10px] text-slate-500" title={SNAPSHOT_META.source.macro}>
+        <p className="mt-2 text-[0.625rem] text-slate-500" title={SNAPSHOT_META.source.macro}>
           {t("app.macroSource", { date: SNAPSHOT_META.asOf })}
         </p>
       </div>
@@ -107,7 +136,7 @@ function Shell() {
       {/* Right column: controls (metric/legend/scope/layers) + country card */}
       <div className="pointer-events-none absolute bottom-4 right-4 top-4 z-40 flex w-[340px] flex-col gap-2">
         <div className="pointer-events-auto flex-none rounded-xl border border-slate-700/60 bg-[#0a0f1c]/55 px-3 py-2 backdrop-blur-lg">
-          <div className="mb-1 text-[10px] uppercase tracking-wide text-slate-400">{t("app.baseMap")}</div>
+          <div className="mb-1 text-[0.625rem] uppercase tracking-wide text-slate-400">{t("app.baseMap")}</div>
           <div className="mb-2 flex flex-wrap gap-1">
             {BASE_MAPS.map((b) => (
               <button
@@ -124,7 +153,7 @@ function Shell() {
 
           {baseMap === "terrain" && (
             <div className="mb-1 mt-1.5 flex items-center gap-2">
-              <span className="w-12 text-[10px] uppercase tracking-wide text-slate-400">{t("app.relief")}</span>
+              <span className="w-12 text-[0.625rem] uppercase tracking-wide text-slate-400">{t("app.relief")}</span>
               <input
                 type="range"
                 min={0}
@@ -134,7 +163,7 @@ function Shell() {
                 onChange={(e) => setReliefScale(Number(e.target.value))}
                 className="h-1 flex-1 cursor-pointer accent-sky-400"
               />
-              <span className="w-9 text-right text-[11px] font-semibold tabular-nums text-sky-300">
+              <span className="w-9 text-right text-[0.6875rem] font-semibold tabular-nums text-sky-300">
                 ×{Math.round(reliefScale * 1.7)}
               </span>
             </div>
@@ -144,7 +173,7 @@ function Shell() {
 
           {baseMap === "political" && (
             <>
-              <div className="mb-1 text-[10px] uppercase tracking-wide text-slate-400">{t("app.metricColor")}</div>
+              <div className="mb-1 text-[0.625rem] uppercase tracking-wide text-slate-400">{t("app.metricColor")}</div>
               <div className="mb-1.5 flex flex-wrap gap-1">
                 {METRICS.map((m) => (
                   <button
@@ -164,7 +193,7 @@ function Shell() {
           )}
 
           <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-wide text-slate-400">{t("app.scope")}</span>
+            <span className="text-[0.625rem] uppercase tracking-wide text-slate-400">{t("app.scope")}</span>
             <select
               value={scopeId}
               onChange={(e) => setScopeId(e.target.value)}
@@ -176,7 +205,7 @@ function Shell() {
             </select>
           </div>
 
-          <div className="mb-1 mt-2 text-[10px] uppercase tracking-wide text-slate-400">{t("app.layers")}</div>
+          <div className="mb-1 mt-2 text-[0.625rem] uppercase tracking-wide text-slate-400">{t("app.layers")}</div>
           <div className="flex flex-wrap gap-1">
             {LAYER_DEFS.map((l) => (
               <button

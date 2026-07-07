@@ -13,7 +13,8 @@
     "ingest:searoute": "node scripts/ingest-searoute.mjs",
     "ingest:roads": "node --experimental-strip-types scripts/ingest-roads.mjs",
     "ingest:air": "node scripts/ingest-air.mjs",
-    "ingest:cities": "node scripts/ingest-cities.mjs"
+    "ingest:cities": "node scripts/ingest-cities.mjs",
+    "ingest:flights": "node scripts/ingest-flights.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",

@@ -39,6 +39,10 @@ const STRINGS: Record<string, Record<Lang, string>> = {
     es: "Haz clic en un país para abrir sus controles y ver su red interna. Arrastra para girar el globo.",
   },
   "app.language": { pt: "Idioma", en: "Language", es: "Idioma" },
+  "app.fontSize": { pt: "Fonte", en: "Font size", es: "Fuente" },
+  "app.fontSmaller": { pt: "Diminuir fonte", en: "Smaller font", es: "Reducir fuente" },
+  "app.fontLarger": { pt: "Aumentar fonte", en: "Larger font", es: "Aumentar fuente" },
+  "app.fontReset": { pt: "Restaurar 100%", en: "Reset to 100%", es: "Restaurar 100%" },
 
   // ---- Metrics (globe color) ----
   "metric.gdp": { pt: "Poder (PIB)", en: "Power (GDP)", es: "Poder (PIB)" },
@@ -49,7 +53,15 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "metric.unemployment": { pt: "Desemprego", en: "Unemployment", es: "Desempleo" },
   "metric.inequality": { pt: "Desigualdade", en: "Inequality", es: "Desigualdad" },
   "metric.education": { pt: "Educação", en: "Education", es: "Educación" },
-  "metric.approval": { pt: "Aprovação", en: "Approval", es: "Aprobación" },
+  "metric.hdi": { pt: "IDH", en: "HDI", es: "IDH" },
+  "metric.costOfLiving": { pt: "Custo de vida", en: "Cost of living", es: "Costo de vida" },
+  "metric.gci": { pt: "Competitividade", en: "Competitiveness", es: "Competitividad" },
+  "metric.econFreedom": { pt: "Liberdade econômica", en: "Economic freedom", es: "Libertad económica" },
+  "metric.cpi": { pt: "Corrupção (IPC)", en: "Corruption (CPI)", es: "Corrupción (IPC)" },
+  "metric.democracy": { pt: "Democracia", en: "Democracy", es: "Democracia" },
+  "metric.pressFreedom": { pt: "Liberdade de imprensa", en: "Press freedom", es: "Libertad de prensa" },
+  "metric.spi": { pt: "Progresso social", en: "Social progress", es: "Progreso social" },
+  "metric.happiness": { pt: "Felicidade", en: "Happiness", es: "Felicidad" },
 
   // ---- Infrastructure layers ----
   "layer.air": { pt: "Aéreo", en: "Air", es: "Aéreo" },
@@ -63,6 +75,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "layer.satellites": { pt: "Satélites", en: "Satellites", es: "Satélites" },
   "layer.clouds": { pt: "Nuvens", en: "Clouds", es: "Nubes" },
   "layer.sky": { pt: "Céu ☀️🌙", en: "Sky ☀️🌙", es: "Cielo ☀️🌙" },
+  "layer.flights": { pt: "Voos ✈️", en: "Flights ✈️", es: "Vuelos ✈️" },
 
   // ---- Base maps ----
   "basemap.political": { pt: "Político", en: "Political", es: "Político" },
@@ -88,7 +101,6 @@ const STRINGS: Record<string, Record<Lang, string>> = {
     es: "Desempleo — % de la fuerza laboral",
   },
   "scale.inequality": { pt: "Desigualdade — índice de Gini", en: "Inequality — Gini index", es: "Desigualdad — índice de Gini" },
-  "scale.approval": { pt: "Aprovação — índice 0–100", en: "Approval — index 0–100", es: "Aprobación — índice 0–100" },
   "scale.gdpPerCapita": {
     pt: "PIB per capita — US$ (escala log)",
     en: "GDP per capita — US$ (log scale)",
@@ -100,6 +112,15 @@ const STRINGS: Record<string, Record<Lang, string>> = {
     es: "Población — millones (escala log)",
   },
   "scale.education": { pt: "Educação — índice 0–100", en: "Education — index 0–100", es: "Educación — índice 0–100" },
+  "scale.hdi": { pt: "IDH — índice 0–1 (ONU)", en: "HDI — index 0–1 (UN)", es: "IDH — índice 0–1 (ONU)" },
+  "scale.costOfLiving": { pt: "Custo de vida — índice (NY=100)", en: "Cost of living — index (NY=100)", es: "Costo de vida — índice (NY=100)" },
+  "scale.gci": { pt: "Competitividade — índice 0–100 (FEM)", en: "Competitiveness — index 0–100 (WEF)", es: "Competitividad — índice 0–100 (FEM)" },
+  "scale.econFreedom": { pt: "Liberdade econômica — índice 0–100", en: "Economic freedom — index 0–100", es: "Libertad económica — índice 0–100" },
+  "scale.cpi": { pt: "Percepção da corrupção (IPC) — 0–100 (maior = mais íntegro)", en: "Corruption Perceptions (CPI) — 0–100 (higher = cleaner)", es: "Percepción de corrupción (IPC) — 0–100 (mayor = más íntegro)" },
+  "scale.democracy": { pt: "Democracia — índice 0–10 (EIU)", en: "Democracy — index 0–10 (EIU)", es: "Democracia — índice 0–10 (EIU)" },
+  "scale.pressFreedom": { pt: "Liberdade de imprensa — 0–100 (RSF)", en: "Press freedom — 0–100 (RSF)", es: "Libertad de prensa — 0–100 (RSF)" },
+  "scale.spi": { pt: "Progresso social (SPI) — 0–100", en: "Social progress (SPI) — 0–100", es: "Progreso social (SPI) — 0–100" },
+  "scale.happiness": { pt: "Felicidade global — 0–10 (WHR)", en: "Global happiness — 0–10 (WHR)", es: "Felicidad global — 0–10 (WHR)" },
 
   // ---- Scenarios ----
   "scenario.sandbox.label": { pt: "Sandbox (hoje)", en: "Sandbox (today)", es: "Sandbox (hoy)" },
@@ -121,9 +142,9 @@ const STRINGS: Record<string, Record<Lang, string>> = {
     es: "Todos empiezan con +5 p.p. de inflación. ¿Puedes anclarla sin romper el PIB?",
   },
   "scenario.inflation-shock.objective": {
-    pt: "Trazer a inflação para perto da meta sem estourar o desemprego nem derrubar a aprovação.",
-    en: "Bring inflation near target without blowing up unemployment or crashing approval.",
-    es: "Llevar la inflación cerca de la meta sin disparar el desempleo ni hundir la aprobación.",
+    pt: "Trazer a inflação para perto da meta sem estourar o desemprego nem derrubar o bem-estar.",
+    en: "Bring inflation near target without blowing up unemployment or crashing wellbeing.",
+    es: "Llevar la inflación cerca de la meta sin disparar el desempleo ni hundir el bienestar.",
   },
   "scenario.stagflation.label": { pt: "Estagflação", en: "Stagflation", es: "Estanflación" },
   "scenario.stagflation.note": {
@@ -132,9 +153,9 @@ const STRINGS: Record<string, Record<Lang, string>> = {
     es: "Inflación alta Y economía estancada. El dilema clásico: subir tasas agrava el desempleo.",
   },
   "scenario.stagflation.objective": {
-    pt: "Sair da estagflação mantendo a aprovação acima de 30 — cuidado com a insatisfação social.",
-    en: "Escape stagflation while keeping approval above 30 — mind the social discontent.",
-    es: "Salir de la estanflación manteniendo la aprobación por encima de 30 — cuidado con el descontento social.",
+    pt: "Sair da estagflação mantendo o bem-estar alto — cuidado com a instabilidade social.",
+    en: "Escape stagflation while keeping wellbeing high — mind social instability.",
+    es: "Salir de la estanflación manteniendo el bienestar alto — cuidado con la inestabilidad social.",
   },
   "scenario.oil-shock.label": { pt: "Choque do petróleo", en: "Oil shock", es: "Choque petrolero" },
   "scenario.oil-shock.note": {
@@ -166,17 +187,18 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   },
   "timeline.normalizeShort": { pt: "· normalizar", en: "· normalize", es: "· normalizar" },
   "timeline.shockShort": { pt: "· choque", en: "· shock", es: "· choque" },
-  "timeline.crisisTitle": {
-    pt: "Países em crise política (aprovação em colapso / instabilidade)",
-    en: "Countries in political crisis (collapsing approval / instability)",
-    es: "Países en crisis política (aprobación en colapso / inestabilidad)",
-  },
-  "timeline.inCrisis": { pt: "{n} em crise", en: "{n} in crisis", es: "{n} en crisis" },
   "timeline.clockTitle": { pt: "Tempo simulado", en: "Simulated time", es: "Tiempo simulado" },
   "timeline.clock": { pt: "Ano {y} · S{w}", en: "Year {y} · W{w}", es: "Año {y} · S{w}" },
 
   // ---- World table ----
   "wt.title": { pt: "Visão geral do mundo", en: "World overview", es: "Visión general del mundo" },
+  "wt.values": { pt: "Valores", en: "Values", es: "Valores" },
+  "wt.ranking": { pt: "Ranking", en: "Ranking", es: "Ranking" },
+  "wt.rankHint": {
+    pt: "Alterna entre os valores e a posição (ranking) de cada país por critério — 1º = melhor.",
+    en: "Toggle between raw values and each country's rank per criterion — 1st = best.",
+    es: "Alterna entre los valores y la posición (ranking) de cada país por criterio — 1º = mejor.",
+  },
   "wt.subtitle": {
     pt: "{n} países · Semana {w} · arraste o título para mover · clique numa linha",
     en: "{n} countries · Week {w} · drag the title to move · click a row",
@@ -189,7 +211,6 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "agg.unempAvg": { pt: "Desemp. méd.", en: "Avg. unempl.", es: "Desemp. prom." },
   "agg.debtAvg": { pt: "Dívida méd.", en: "Avg. debt", es: "Deuda prom." },
   "agg.recession": { pt: "Em recessão", en: "In recession", es: "En recesión" },
-  "agg.crisis": { pt: "Em crise", en: "In crisis", es: "En crisis" },
 
   // ---- World table columns ----
   "col.name": { pt: "País", en: "Country", es: "País" },
@@ -203,8 +224,16 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "col.debtPctGdp": { pt: "Dívida", en: "Debt", es: "Deuda" },
   "col.gini": { pt: "Gini", en: "Gini", es: "Gini" },
   "col.education": { pt: "Educ.", en: "Educ.", es: "Educ." },
+  "col.hdi": { pt: "IDH", en: "HDI", es: "IDH" },
+  "col.costOfLiving": { pt: "Custo vida", en: "Cost/liv.", es: "Costo vida" },
+  "col.gci": { pt: "Compet.", en: "Compet.", es: "Compet." },
+  "col.econFreedom": { pt: "Lib.econ.", en: "Econ.free.", es: "Lib.econ." },
+  "col.cpi": { pt: "IPC", en: "CPI", es: "IPC" },
+  "col.democracy": { pt: "Democ.", en: "Democ.", es: "Democ." },
+  "col.pressFreedom": { pt: "Imprensa", en: "Press", es: "Prensa" },
+  "col.spi": { pt: "SPI", en: "SPI", es: "SPI" },
+  "col.happiness": { pt: "Felic.", en: "Happ.", es: "Felic." },
   "col.tradeBalancePctGdp": { pt: "Saldo", en: "Balance", es: "Saldo" },
-  "col.approval": { pt: "Aprov.", en: "Appr.", es: "Aprob." },
 
   // ---- Country panel ----
   "cp.dragHint": {
@@ -215,12 +244,6 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "cp.economy": { pt: "Economia", en: "Economy", es: "Economía" },
   "cp.socialFiscal": { pt: "Social & fiscal", en: "Social & fiscal", es: "Social y fiscal" },
   "cp.levers": { pt: "Alavancas de política", en: "Policy levers", es: "Palancas de política" },
-  "cp.approvalPublic": { pt: "Aprovação pública", en: "Public approval", es: "Aprobación pública" },
-  "cp.crisisText": {
-    pt: "Crise política — fuga de capital e instabilidade. Recupere a aprovação!",
-    en: "Political crisis — capital flight and instability. Win back approval!",
-    es: "Crisis política — fuga de capital e inestabilidad. ¡Recupera la aprobación!",
-  },
   "cp.instability": { pt: "Instabilidade", en: "Instability", es: "Inestabilidad" },
   "cp.wellbeing": { pt: "Bem-estar", en: "Wellbeing", es: "Bienestar" },
 
@@ -240,6 +263,15 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "stat.gini": { pt: "Desigualdade (Gini)", en: "Inequality (Gini)", es: "Desigualdad (Gini)" },
   "stat.poverty": { pt: "Pobreza", en: "Poverty", es: "Pobreza" },
   "stat.education": { pt: "Educação", en: "Education", es: "Educación" },
+  "stat.hdi": { pt: "IDH", en: "HDI", es: "IDH" },
+  "stat.costOfLiving": { pt: "Custo de vida", en: "Cost of living", es: "Costo de vida" },
+  "stat.gci": { pt: "Competitividade", en: "Competitiveness", es: "Competitividad" },
+  "stat.econFreedom": { pt: "Liberdade econômica", en: "Economic freedom", es: "Libertad económica" },
+  "stat.cpi": { pt: "Corrupção (IPC)", en: "Corruption (CPI)", es: "Corrupción (IPC)" },
+  "stat.democracy": { pt: "Democracia", en: "Democracy", es: "Democracia" },
+  "stat.pressFreedom": { pt: "Liberdade de imprensa", en: "Press freedom", es: "Libertad de prensa" },
+  "stat.spi": { pt: "Progresso social", en: "Social progress", es: "Progreso social" },
+  "stat.happiness": { pt: "Felicidade", en: "Happiness", es: "Felicidad" },
 
   // ---- Levers ----
   "lever.rate": { pt: "Taxa de juros", en: "Policy rate", es: "Tasa de interés" },
@@ -247,12 +279,16 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "lever.gov": { pt: "Gasto público", en: "Government spending", es: "Gasto público" },
   "lever.tax": { pt: "Carga tributária", en: "Tax burden", es: "Carga tributaria" },
   "lever.social": { pt: "Gasto social", en: "Social spending", es: "Gasto social" },
+  "lever.infra": { pt: "Infraestrutura & inovação", en: "Infrastructure & innovation", es: "Infraestructura e innovación" },
+  "lever.subsidies": { pt: "Subsídios ao custo de vida", en: "Cost-of-living subsidies", es: "Subsidios al costo de vida" },
+  "lever.health": { pt: "Saúde & bem-estar", en: "Health & wellbeing", es: "Salud y bienestar" },
+  "lever.institutions": { pt: "Instituições & Estado de direito", en: "Institutions & rule of law", es: "Instituciones y Estado de derecho" },
+  "lever.market": { pt: "Abertura de mercado", en: "Market liberalization", es: "Apertura de mercado" },
 
   // ---- Charts ----
   "chart.inflation": { pt: "Inflação", en: "Inflation", es: "Inflación" },
   "chart.growth": { pt: "Crescimento", en: "Growth", es: "Crecimiento" },
   "chart.unemployment": { pt: "Desemprego", en: "Unemployment", es: "Desempleo" },
-  "chart.approval": { pt: "Aprovação", en: "Approval", es: "Aprobación" },
   "chart.debt": { pt: "Dívida", en: "Debt", es: "Deuda" },
   "chart.fx": { pt: "Câmbio", en: "FX", es: "Tipo de cambio" },
   "chart.publicDebtTitle": { pt: "Dívida pública — % do PIB", en: "Public debt — % of GDP", es: "Deuda pública — % del PIB" },
@@ -265,7 +301,6 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   // ---- Common ----
   "common.close": { pt: "Fechar", en: "Close", es: "Cerrar" },
   "common.resize": { pt: "Redimensionar", en: "Resize", es: "Redimensionar" },
-  "common.inCrisis": { pt: "Em crise", en: "In crisis", es: "En crisis" },
   "common.and": { pt: "e", en: "and", es: "y" },
   "common.explanation": { pt: "Explicação", en: "Explanation", es: "Explicación" },
 

@@ -30,9 +30,17 @@ export interface G20Datum {
   popGrowth: number; // population growth, % per year (World Bank)
   dependencyRatio: number; // age dependency ratio, % (World Bank)
   taxBaseline: number; // baseline tax burden, % of GDP (World Bank/curated)
-  approval0: number; // starting public approval, 0..100 (curated)
   commodityExporter: number; // net commodity exposure, -1..+1 (curated)
   education0: number; // education quality index 0..100 (World Bank harmonized learning outcomes)
+  hdi0: number; // Human Development Index 0..1 (UNDP 2022, curated by iso3)
+  costOfLiving0: number; // Cost of Living index, NYC=100 (Numbeo-style, curated by iso3)
+  gci0: number; // Global Competitiveness Index 0..100 (WEF GCI 4.0 2019, curated by iso3)
+  econFreedom0: number; // Index of Economic Freedom 0..100 (Heritage 2024)
+  cpi0: number; // Corruption Perceptions Index 0..100 (Transparency Int'l 2023)
+  democracy0: number; // Democracy Index 0..10 (EIU 2023)
+  pressFreedom0: number; // Press Freedom Index 0..100 (RSF 2024)
+  spi0: number; // Social Progress Index 0..100 (2023)
+  happiness0: number; // World Happiness Report score 0..10 (2024)
 }
 
 /** As-of date + provenance of the generated snapshot. */
@@ -53,9 +61,17 @@ const withDefaults = (c: Record<string, number | string>): G20Datum => ({
   popGrowth: (c.popGrowth as number) ?? 0.7,
   dependencyRatio: (c.dependencyRatio as number) ?? 55,
   taxBaseline: (c.taxBaseline as number) ?? 20,
-  approval0: (c.approval0 as number) ?? 52,
   commodityExporter: (c.commodityExporter as number) ?? 0,
   education0: (c.education0 as number) ?? 50,
+  hdi0: (c.hdi0 as number) ?? 0.7,
+  costOfLiving0: (c.costOfLiving0 as number) ?? 45,
+  gci0: (c.gci0 as number) ?? 55,
+  econFreedom0: (c.econFreedom0 as number) ?? 55,
+  cpi0: (c.cpi0 as number) ?? 40,
+  democracy0: (c.democracy0 as number) ?? 5.5,
+  pressFreedom0: (c.pressFreedom0 as number) ?? 55,
+  spi0: (c.spi0 as number) ?? 65,
+  happiness0: (c.happiness0 as number) ?? 5.5,
 });
 
 export const G20: G20Datum[] = (

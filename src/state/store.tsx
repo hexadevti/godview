@@ -30,7 +30,7 @@ export interface HistoryPoint {
   tradeBalance: number;
   unemployment: number;
   debt: number;
-  approval: number;
+  wellbeing: number;
   gini: number;
 }
 
@@ -108,7 +108,7 @@ export function SimProvider({ children }: { children: ReactNode }) {
         tradeBalance: c.tradeBalancePctGdp,
         unemployment: c.unemployment,
         debt: c.debtPctGdp,
-        approval: c.approval,
+        wellbeing: c.wellbeing,
         gini: c.gini,
       });
       h[c.iso] = next;
