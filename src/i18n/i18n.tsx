@@ -72,7 +72,6 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "layer.rail": { pt: "Ferroviário", en: "Rail", es: "Ferrocarril" },
   "layer.cities": { pt: "Cidades", en: "Cities", es: "Ciudades" },
   "layer.cables": { pt: "Cabos", en: "Cables", es: "Cables" },
-  "layer.rivers": { pt: "Hidrovias", en: "Waterways", es: "Hidrovías" },
   "layer.datacenters": { pt: "Datacenters", en: "Datacenters", es: "Datacenters" },
   "layer.satellites": { pt: "Satélites", en: "Satellites", es: "Satélites" },
   "layer.clouds": { pt: "Nuvens", en: "Clouds", es: "Nubes" },
@@ -84,8 +83,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "basemap.terrain": { pt: "Relevo ×10", en: "Relief ×10", es: "Relieve ×10" },
   "basemap.satellite": { pt: "Satélite", en: "Satellite", es: "Satélite" },
   "basemap.agora": { pt: "Agora ☀️🌙", en: "Now ☀️🌙", es: "Ahora ☀️🌙" },
-  "basemap.night": { pt: "Noturno", en: "Night", es: "Nocturno" },
-  "basemap.hydro": { pt: "Hidrográfico", en: "Hydrographic", es: "Hidrográfico" },
+  "basemap.night": { pt: "Luz do dia ☀️🌙", en: "Day light ☀️🌙", es: "Luz del día ☀️🌙" },
 
   // ---- Scopes ----
   "scope.g7": { pt: "G7", en: "G7", es: "G7" },

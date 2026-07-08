@@ -13,7 +13,6 @@ import { DATACENTERS } from "../data/datacenters";
 import { G20_BY_ISO, G20_BY_NAME } from "../data/g20";
 import cablesData from "../data/generated/cables.json";
 import satsData from "../data/generated/satellites.json";
-import { WATERWAYS } from "../data/waterways";
 import { countryName } from "../i18n/countryNames";
 import { useI18n } from "../i18n/i18n";
 import { formatPop } from "../panels/CountryPanel";
@@ -28,13 +27,12 @@ import { makePlane, makeShip, makeTrain, makeTruck } from "./vehicleMesh";
 // heightmap used for BOTH relief displacement and bump shading.
 import dayUrl from "../assets/textures/earth-day-hi.jpg";
 import topologyUrl from "../assets/textures/earth-topology.png";
-import waterUrl from "../assets/textures/earth-water.png";
 import nightUrl from "../assets/textures/earth-night-hi.jpg";
 import moonUrl from "../assets/textures/moon.jpg";
 import cloudsUrl from "../assets/textures/clouds.jpg";
 
 /** Globe base map (earth surface), independent of the choropleth metric. */
-export type BaseMap = "political" | "terrain" | "satellite" | "hydro" | "night" | "agora";
+export type BaseMap = "political" | "terrain" | "satellite" | "night" | "agora";
 
 /** Direction (unit vector, globe world space) to the sun for the given moment —
  *  used to blend day/night. Subsolar point via the same getCoords the globe uses. */
@@ -102,7 +100,7 @@ function makeGlowTexture(): THREE.Texture {
   return new THREE.CanvasTexture(c);
 }
 
-type PathKind = RouteKind | "cable" | "river";
+type PathKind = RouteKind | "cable";
 
 // Distinct color per line layer.
 const PATH_COLORS: Record<PathKind, string> = {
@@ -111,11 +109,10 @@ const PATH_COLORS: Record<PathKind, string> = {
   road: "rgba(239,68,68,0.95)", // red — high contrast on gold land
   rail: "rgba(34,197,94,0.95)", // green
   cable: "rgba(167,139,250,0.55)", // violet — submarine cables
-  river: "rgba(96,165,250,0.75)", // blue — waterways
 };
 
 export type LayerState = Record<
-  RouteKind | "cities" | "cables" | "rivers" | "datacenters" | "satellites" | "clouds" | "sky" | "atmosphere" | "borders",
+  RouteKind | "cities" | "cables" | "datacenters" | "satellites" | "clouds" | "sky" | "atmosphere" | "borders",
   boolean
 >;
 
@@ -124,7 +121,10 @@ export type LayerState = Record<
 // static snapshot — to restore the near-real-time layer, point this back at
 // https://clouds.matteason.co.uk/images/2048x1024/clouds.jpg (CORS-enabled).
 const CLOUDS_URL = cloudsUrl;
-const SHADER_MODES: BaseMap[] = ["satellite", "night", "agora"];
+// Base maps rendered by the day/night ShaderMaterial. "political" is included so
+// its base (ocean + land under the choropleth) is always the real satellite Earth,
+// day-lit or night-lights depending on the local time (like "agora").
+const SHADER_MODES: BaseMap[] = ["satellite", "night", "agora", "political"];
 
 // Crisp round dot used to mark airport nodes — a hard-edged filled circle with a
 // thin dark rim for definition (sharp, not a soft glow). Drawn once on a canvas.
@@ -160,12 +160,6 @@ const CABLE_PATHS: PathDatum[] = (cablesData.segments as unknown as Array<{ w: [
   from: 0,
   to: 0,
   coords: s.w.map(([lat, lng]) => [lat, lng, 0.002] as [number, number, number]),
-}));
-const RIVER_PATHS: PathDatum[] = WATERWAYS.map((w) => ({
-  kind: "river" as const,
-  from: 0,
-  to: 0,
-  coords: w.waypoints.map(([lat, lng]) => [lat, lng, 0.004] as [number, number, number]),
 }));
 
 /** Combined route visibility: the mode's layer must be on, both endpoints must
@@ -266,6 +260,10 @@ export function GlobeView({
     if (!cache[url]) {
       const t = new THREE.TextureLoader().load(url);
       if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+      // Max anisotropic filtering keeps the map crisp at grazing angles (near the
+      // limb) instead of blurring — the biggest win for perceived resolution.
+      // three.js clamps to the GPU's real max at upload, so 16 is safe.
+      t.anisotropy = 16;
       cache[url] = t;
     }
     return cache[url];
@@ -284,23 +282,15 @@ export function GlobeView({
     m.displacementScale = 0;
     m.emissive.set("#000000");
     m.color.set("#ffffff");
-    if (baseMap === "political") {
-      m.color.set("#0a1526"); // dark ocean, choropleth countries on top
-    } else if (baseMap === "terrain") {
+    if (baseMap === "terrain") {
       const topo = loadTex(topologyUrl, false);
       m.map = loadTex(dayUrl, true);
       m.bumpMap = topo;
       m.bumpScale = 4;
       m.displacementMap = topo; // real geometric relief (mountains stick out)
       m.displacementScale = reliefScale;
-    } else if (baseMap === "hydro") {
-      m.map = loadTex(waterUrl, true); // water mask: oceans/lakes bright
-      m.color.set("#2f6fd0"); // tint water blue; land reads dark
-      m.emissive.set("#0a1626"); // keep land from going pure black
-      m.bumpMap = loadTex(topologyUrl, false);
-      m.bumpScale = 3;
     }
-    // satellite / night / agora are rendered by the day-night ShaderMaterial below.
+    // satellite / night / agora / political are rendered by the ShaderMaterial below.
     m.needsUpdate = true;
   }, [baseMap, globeMaterial, reliefScale]);
 
@@ -365,13 +355,16 @@ export function GlobeView({
     const u = dayNightMaterial.uniforms;
     u.dayTexture.value = loadTex(dayUrl, false);
     u.nightTexture.value = loadTex(nightUrl, false);
-    u.mode.value = baseMap === "satellite" ? 0 : baseMap === "night" ? 1 : 2;
+    // 0 = satellite (always day); everything else = day/night composite (2).
+    u.mode.value = baseMap === "satellite" ? 0 : 2;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseMap, dayNightMaterial]);
 
-  // "Agora": point the sun at the current subsolar point and refresh each minute.
+  // Live day/night (every day/night-composite base map — agora, political,
+  // "Day light"): point the sun at the current subsolar point and refresh each
+  // minute so night falls with the real clock. Satellite (always day) is skipped.
   useEffect(() => {
-    if (baseMap !== "agora" || size.w === 0) return;
+    if (baseMap === "satellite" || !SHADER_MODES.includes(baseMap) || size.w === 0) return;
     const globe = globeEl.current;
     if (!globe) return;
     const update = () => {
@@ -710,15 +703,14 @@ export function GlobeView({
     [],
   );
   // Filter transport routes by layer/scope/selection, then append the global
-  // infrastructure line layers (cables, waterways) when their layer is on.
+  // infrastructure line layers (cables) when their layer is on.
   const paths = useMemo(() => {
     const out = allPaths.filter((p) =>
       routeVisible(p.kind as RouteKind, p.from, p.to, selected, layers, scope),
     );
     if (layers.cables) out.push(...CABLE_PATHS);
-    if (layers.rivers || baseMap === "hydro") out.push(...RIVER_PATHS);
     return out;
-  }, [allPaths, selected, layers, scope, baseMap]);
+  }, [allPaths, selected, layers, scope]);
 
   // City points/labels for the selected country (any country; when "cities" on).
   const cityLabels = useMemo(
@@ -905,14 +897,14 @@ export function GlobeView({
           polygonSideColor={(f: object) => {
             const feat = f as CountryFeature;
             const iso = g20Datum(feat)?.iso ?? featureIso(feat);
-            if (selectedIsos.includes(iso)) return "rgba(6,12,24,0.75)"; // selection wall stays
+            if (selectedIsos.includes(iso)) return "rgb(6,12,24)"; // selection wall stays
             // The slight polygon extrusion draws side walls that read as borders;
             // hide them when borders are toggled off (esp. over a base map where
             // the transparent caps mean the walls are the only visible divides).
             // Return a falsy color so three-globe drops the side geometry entirely
             // (a transparent color still renders — three-globe skips material.needsUpdate).
             if (!layers.borders) return "";
-            return "rgba(6,12,24,0.75)";
+            return "rgb(6,12,24)"; // opaque so borders read solidly over the base map
           }}
           polygonStrokeColor={(f: object) => {
             const feat = f as CountryFeature;
@@ -1017,7 +1009,6 @@ export function GlobeView({
           pathStroke={(d: object) => {
             const k = (d as PathDatum).kind;
             if (k === "cable") return 0.25; // thin submarine cables
-            if (k === "river") return 0.6;
             // Internal road/rail are drawn thicker so they read at country zoom.
             return k === "road" || k === "rail" ? 1.2 : k === "sea" ? 0.9 : 0.5;
           }}

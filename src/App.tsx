@@ -24,7 +24,6 @@ const LAYER_DEFS: Array<{ id: keyof LayerState; color: string }> = [
   { id: "rail", color: "#22c55e" },
   { id: "cities", color: "#e2e8f0" },
   { id: "cables", color: "#a78bfa" },
-  { id: "rivers", color: "#60a5fa" },
   { id: "datacenters", color: "#38bdf8" },
   { id: "satellites", color: "#67e8f9" },
   { id: "clouds", color: "#e2e8f0" },
@@ -32,7 +31,9 @@ const LAYER_DEFS: Array<{ id: keyof LayerState; color: string }> = [
   { id: "sky", color: "#fde68a" },
 ];
 
-const BASE_MAPS: BaseMap[] = ["political", "terrain", "satellite", "agora", "night", "hydro"];
+// "night" is the "Day light" base map — a real-time day/night composite (satellite
+// imagery on the lit side, night lights on the dark side) — and is the default.
+const BASE_MAPS: BaseMap[] = ["political", "terrain", "satellite", "night"];
 
 const ALL_ISOS = G20.map((d) => d.iso);
 
@@ -82,13 +83,13 @@ function FontSizeSwitcher() {
 
 function Shell() {
   const [metric, setMetric] = useState<Metric>("gdp");
-  const [baseMap, setBaseMap] = useState<BaseMap>("political");
+  const [baseMap, setBaseMap] = useState<BaseMap>("night");
   const [reliefScale, setReliefScale] = useState(6);
   const [showTable, setShowTable] = useState(false);
   const [scopeId, setScopeId] = useState("all");
   const [layers, setLayers] = useState<LayerState>({
     borders: true, air: true, sea: true, road: true, rail: true, cities: true,
-    cables: false, rivers: false, datacenters: false, satellites: false, clouds: false, atmosphere: true, sky: false,
+    cables: false, datacenters: false, satellites: false, clouds: false, atmosphere: true, sky: false,
   });
   const { scenarioId } = useSim();
   const { t } = useI18n();
