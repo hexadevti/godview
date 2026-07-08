@@ -1,19 +1,10 @@
 name = "godview"
 compatibility_date = "2026-07-06"
 
-# Static SPA served via Cloudflare Workers Static Assets, PLUS a tiny Worker that
-# adds one dynamic route — /api/flights — proxying the live-flights feed for the
-# aviation layer's zoom-in tier (worker/flights.mjs). The Git build runs
-# `npm run build` (→ ./dist), then `npx wrangler deploy` uploads the Worker + ./dist.
-#
-# `run_worker_first = ["/api/*"]` means: only /api/* requests invoke the Worker;
-# every other request is served straight from static assets (SPA fallback intact),
-# so the site keeps its assets-only performance. To disable the live tier again,
-# remove `main` + `binding` + `run_worker_first` and unset VITE_FLIGHTS_PROXY.
-main = "worker/flights.mjs"
-
+# Static SPA served via Cloudflare Workers Static Assets. The Git build runs
+# `npm run build` (→ ./dist), then `npx wrangler deploy` uploads ./dist. There
+# is no Worker script (no `main`) — it's assets-only. Unmatched routes fall back
+# to index.html so client-side routing works (SPA behavior).
 [assets]
 directory = "./dist"
-binding = "ASSETS"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*"]

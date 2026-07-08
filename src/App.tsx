@@ -13,7 +13,7 @@ import { SimProvider, useSim } from "./state/store";
 
 const METRICS: Metric[] = [
   "gdp", "gdpPerCapita", "population", "growth", "inflation", "unemployment", "inequality", "education", "hdi", "costOfLiving", "gci",
-  "econFreedom", "cpi", "democracy", "pressFreedom", "spi", "happiness",
+  "econFreedom", "cpi", "democracy", "pressFreedom", "spi", "happiness", "homicide",
 ];
 
 const LAYER_DEFS: Array<{ id: keyof LayerState; color: string }> = [
@@ -24,7 +24,6 @@ const LAYER_DEFS: Array<{ id: keyof LayerState; color: string }> = [
   { id: "cities", color: "#e2e8f0" },
   { id: "cables", color: "#a78bfa" },
   { id: "rivers", color: "#60a5fa" },
-  { id: "flights", color: "#fbbf24" },
   { id: "datacenters", color: "#38bdf8" },
   { id: "satellites", color: "#67e8f9" },
   { id: "clouds", color: "#e2e8f0" },
@@ -87,7 +86,7 @@ function Shell() {
   const [scopeId, setScopeId] = useState("all");
   const [layers, setLayers] = useState<LayerState>({
     air: true, sea: true, road: true, rail: true, cities: true,
-    cables: false, rivers: false, datacenters: false, satellites: false, clouds: false, sky: false, flights: false,
+    cables: false, rivers: false, datacenters: false, satellites: false, clouds: false, sky: false,
   });
   const { scenarioId } = useSim();
   const { t } = useI18n();

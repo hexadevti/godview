@@ -35,6 +35,7 @@ const DAMP_INST = 0.008; // institutional indices: CPI, democracy, press (glacia
 const DAMP_EFREE = 0.01; // economic freedom (glacial — structural)
 const DAMP_SPI = 0.04; // social progress (medium — an outcome composite)
 const DAMP_HAPPY = 0.05; // happiness (medium — an outcome composite)
+const DAMP_HOM = 0.03; // homicide rate (slow — a persistent social trend)
 
 const WEEKS_PER_YEAR = 52;
 
@@ -123,6 +124,7 @@ export function initialWorld(scenario: ScenarioSnapshot): WorldState {
       pressFreedom: d.pressFreedom0,
       spi: d.spi0,
       happiness: d.happiness0,
+      homicide: d.homicide0,
       fiscalBalancePctGdp: 0,
       sovereignSpread: 0,
       unrest: 0,
@@ -415,6 +417,24 @@ export function tick(world: WorldState): WorldState {
     );
     const unrest = clamp(c.unrest + DAMP_UNREST * (unrestTarget - c.unrest), 0, 100);
 
+    // --- Homicide rate (per 100k): a persistent social trend anchored on the
+    //     country's real rate. Poverty, inequality, joblessness and unrest push it
+    //     up; social spending, cleaner institutions (CPI) and above-potential
+    //     growth pull it down. Moves slowly (violence trends shift over years). ---
+    const homTarget = clamp(
+      d.homicide0 +
+        0.08 * (povertyPct - d.poverty0) +
+        0.05 * (gini - d.gini0) +
+        0.04 * (unemployment - d.nairu) +
+        0.06 * Math.max(0, c.unrest - 40) -
+        0.03 * (socialSpendShare - 50) -
+        0.03 * (cpi - d.cpi0) -
+        0.08 * Math.max(0, gdpGrowthAnn - d.potentialGrowth),
+      0.2,
+      80,
+    );
+    const homicide = clamp(c.homicide + DAMP_HOM * (homTarget - c.homicide), 0.2, 80);
+
     // --- Composite wellbeing index (display): lifted by human development,
     //     eroded by poverty, inequality, unemployment, inflation and an
     //     unaffordable cost of living. ---
@@ -457,6 +477,7 @@ export function tick(world: WorldState): WorldState {
       pressFreedom,
       spi,
       happiness,
+      homicide,
       fiscalBalancePctGdp,
       sovereignSpread,
       unrest,

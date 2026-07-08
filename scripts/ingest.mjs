@@ -228,9 +228,9 @@ async function main() {
     // with an HDI-based fallback for economies the WEF didn't rank.
     const gci0 = resolveCompetitiveness(k, hdi0);
 
-    // Six governance / wellbeing indices (Economic Freedom, CPI, Democracy,
-    // Press Freedom, Social Progress, Happiness): curated tables by iso3, with
-    // HDI-based fallbacks. Returns { econFreedom0, cpi0, democracy0, ... }.
+    // Seven governance / wellbeing indices (Economic Freedom, CPI, Democracy,
+    // Press Freedom, Social Progress, Happiness, Homicide rate): curated tables by
+    // iso3, with HDI-based fallbacks. Returns { econFreedom0, cpi0, democracy0, ... }.
     const extraIndices = resolveExtraIndices(k, hdi0);
 
     const exportShare = latest(exp[k]);
@@ -287,7 +287,8 @@ async function main() {
         "Cost of Living (costOfLiving0) is a Numbeo-style index (NYC=100), curated by iso3. " +
         "GCI (gci0) is the WEF Global Competitiveness Index 4.0 (2019), curated by iso3. " +
         "econFreedom0 (Heritage 2024), cpi0 (Transparency Int'l 2023), democracy0 (EIU 2023), " +
-        "pressFreedom0 (RSF 2024), spi0 (Social Progress 2023) and happiness0 (WHR 2024) are " +
+        "pressFreedom0 (RSF 2024), spi0 (Social Progress 2023), happiness0 (WHR 2024) and " +
+        "homicide0 (UNODC intentional homicides per 100k, ~2021) are " +
         "curated by iso3 with HDI-based fallbacks.",
     },
     countries,

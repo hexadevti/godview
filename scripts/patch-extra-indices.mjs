@@ -1,6 +1,6 @@
-// One-off backfill: add the six governance/wellbeing indices (econFreedom0,
-// cpi0, democracy0, pressFreedom0, spi0, happiness0) to every country in the
-// already-generated snapshot WITHOUT re-fetching World Bank data. Future
+// One-off backfill: add the seven governance/wellbeing indices (econFreedom0,
+// cpi0, democracy0, pressFreedom0, spi0, happiness0, homicide0) to every country
+// in the already-generated snapshot WITHOUT re-fetching World Bank data. Future
 // `node scripts/ingest.mjs` runs produce them natively. Depends on hdi0 being
 // present (for the fallbacks).
 //
@@ -34,5 +34,6 @@ snap.countries = snap.countries.map((c) => {
 
 writeFileSync(OUT, JSON.stringify(snap, null, 2) + "\n");
 const n = snap.countries.length;
-console.log(`Patched 6 indices into ${n} countries. Curated coverage (rest = HDI fallback):`);
+const nIdx = Object.keys(EXTRA_INDEX_TABLES).length;
+console.log(`Patched ${nIdx} indices into ${n} countries. Curated coverage (rest = HDI fallback):`);
 for (const [k, v] of Object.entries(counts)) console.log(`  ${k.padEnd(13)} ${v}/${n}`);

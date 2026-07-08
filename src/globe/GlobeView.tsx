@@ -13,7 +13,6 @@ import { DATACENTERS } from "../data/datacenters";
 import { G20_BY_ISO, G20_BY_NAME } from "../data/g20";
 import cablesData from "../data/generated/cables.json";
 import satsData from "../data/generated/satellites.json";
-import flightsData from "../data/generated/flights-snapshot.json";
 import { WATERWAYS } from "../data/waterways";
 import { countryName } from "../i18n/countryNames";
 import { useI18n } from "../i18n/i18n";
@@ -22,7 +21,7 @@ import { useSim } from "../state/store";
 import type { CountryState } from "../sim/types";
 import { sampleAt } from "./geo";
 import { METRIC_SCALES, metricColor, type Metric } from "./metricScale";
-import { ROUTES, buildVehicles, routeAltitude, type RouteKind } from "./routes";
+import { AIRPORTS, ROUTES, buildVehicles, routeAltitude, type RouteKind } from "./routes";
 import { makePlane, makeShip, makeTrain, makeTruck } from "./vehicleMesh";
 // Earth textures — bundled offline by Vite. Day (NASA Blue Marble 5400×2700) and
 // night (NASA Black Marble 3600×1800) are high-res; topology is the grayscale
@@ -116,7 +115,7 @@ const PATH_COLORS: Record<PathKind, string> = {
 };
 
 export type LayerState = Record<
-  RouteKind | "cities" | "cables" | "rivers" | "datacenters" | "satellites" | "clouds" | "sky" | "flights",
+  RouteKind | "cities" | "cables" | "rivers" | "datacenters" | "satellites" | "clouds" | "sky",
   boolean
 >;
 
@@ -126,6 +125,27 @@ export type LayerState = Record<
 // https://clouds.matteason.co.uk/images/2048x1024/clouds.jpg (CORS-enabled).
 const CLOUDS_URL = cloudsUrl;
 const SHADER_MODES: BaseMap[] = ["satellite", "night", "agora"];
+
+// Crisp round dot used to mark airport nodes — a hard-edged filled circle with a
+// thin dark rim for definition (sharp, not a soft glow). Drawn once on a canvas.
+let _dotTex: THREE.CanvasTexture | null = null;
+function dotTexture(): THREE.CanvasTexture {
+  if (_dotTex) return _dotTex;
+  const S = 64;
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = S;
+  const ctx = cv.getContext("2d")!;
+  ctx.beginPath();
+  ctx.arc(S / 2, S / 2, S * 0.36, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff"; // white so the material color tints it cleanly
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = "rgba(3,18,38,0.75)"; // thin dark rim
+  ctx.stroke();
+  _dotTex = new THREE.CanvasTexture(cv);
+  _dotTex.anisotropy = 4;
+  return _dotTex;
+}
 
 interface PathDatum {
   kind: PathKind;
@@ -218,6 +238,7 @@ export function GlobeView({
   const selRef = useRef<number | null>(selected);
   const layersRef = useRef(layers);
   const scopeRef = useRef(scope);
+  const airportsRef = useRef<THREE.Object3D | null>(null); // airport dots (hubs + others)
   useEffect(() => {
     selRef.current = selected;
     layersRef.current = layers;
@@ -468,6 +489,75 @@ export function GlobeView({
     };
   }, [layers.sky, size.w]);
 
+  const ready = size.w > 0; // globe mounted (has measured size)
+
+  // All airports (OpenFlights, ~6k) drawn as small ground dots, with HUBS (the
+  // airports that are endpoints of an air route) singled out — larger and amber —
+  // vs. the rest (small, dim). Two THREE.Points clouds in one group; shown/hidden
+  // with the Air layer.
+  useEffect(() => {
+    const globe = globeEl.current;
+    if (!globe || AIRPORTS.length === 0) return;
+    const scene = globe.scene();
+    // On the ground: just off the surface in terrain/satellite modes; in political
+    // mode the country caps are extruded to ~0.02, so sit just above them.
+    const ALT = baseMap === "political" ? 0.021 : 0.002;
+
+    // Hub = an airport that is an endpoint of some air route.
+    const key = (la: number, ln: number) => `${la.toFixed(2)},${ln.toFixed(2)}`;
+    const hubSet = new Set<string>();
+    for (const r of ROUTES) {
+      if (r.kind !== "air") continue;
+      const a = r.points[0];
+      const b = r.points[r.points.length - 1];
+      hubSet.add(key(a[0], a[1]));
+      hubSet.add(key(b[0], b[1]));
+    }
+    const hubs: Array<[number, number]> = [];
+    const others: Array<[number, number]> = [];
+    for (const ap of AIRPORTS) (hubSet.has(key(ap[0], ap[1])) ? hubs : others).push(ap);
+
+    const makeCloud = (coords: Array<[number, number]>, size: number, color: number) => {
+      const geom = new THREE.BufferGeometry();
+      const pos = new Float32Array(coords.length * 3);
+      coords.forEach(([la, ln], i) => {
+        const p = globe.getCoords(la, ln, ALT);
+        pos.set([p.x, p.y, p.z], i * 3);
+      });
+      geom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      const mat = new THREE.PointsMaterial({
+        size,
+        map: dotTexture(),
+        color,
+        transparent: true,
+        depthWrite: false,
+        sizeAttenuation: true,
+      });
+      const pts = new THREE.Points(geom, mat);
+      pts.frustumCulled = false;
+      return { pts, geom, mat };
+    };
+
+    const rest = makeCloud(others, 1.2, 0x64748b); // non-hubs: small, dim slate
+    const hub = makeCloud(hubs, 2.8, 0xfbbf24); // hubs: larger, amber
+    const group = new THREE.Group();
+    group.add(rest.pts, hub.pts);
+    group.visible = layersRef.current.air;
+    scene.add(group);
+    airportsRef.current = group;
+    return () => {
+      scene.remove(group);
+      rest.geom.dispose(); rest.mat.dispose();
+      hub.geom.dispose(); hub.mat.dispose();
+      airportsRef.current = null;
+    };
+  }, [ready, baseMap]);
+
+  // Show/hide the airport dots with the Air layer (no rebuild on toggle).
+  useEffect(() => {
+    if (airportsRef.current) airportsRef.current.visible = layers.air;
+  }, [layers.air]);
+
   // Route lines (air = arched great circle, sea = surface lane), computed once.
   const allPaths = useMemo<PathDatum[]>(
     () =>
@@ -511,12 +601,12 @@ export function GlobeView({
 
   // Moving planes & ships: added straight to the globe's three.js scene and
   // advanced each frame (reuses meshes -> cheap; no React re-render per frame).
-  const ready = size.w > 0;
   useEffect(() => {
     const globe = globeEl.current;
     if (!globe) return;
     const scene = globe.scene();
-    const vehicles = buildVehicles();
+    const routes = ROUTES;
+    const vehicles = buildVehicles(routes);
     const meshes = vehicles.map((v) =>
       v.kind === "air" ? makePlane()
         : v.kind === "sea" ? makeShip()
@@ -537,7 +627,7 @@ export function GlobeView({
       const scp = scopeRef.current;
       for (let i = 0; i < vehicles.length; i++) {
         const v = vehicles[i];
-        const r = ROUTES[v.routeIndex];
+        const r = routes[v.routeIndex];
         v.t += v.tPerSec * dt;
         if (v.t > 1) v.t -= 1;
         const m = meshes[i];
@@ -631,151 +721,6 @@ export function GlobeView({
     };
   }, [ready]);
 
-  // Flights: a bundled global snapshot (~7k airborne aircraft, OpenSky) drawn as
-  // a single THREE.Points cloud. NOT real time — each aircraft is gently
-  // dead-reckoned forward from its snapshot position (track + speed, time-warped
-  // for visible motion) and the whole fleet resets to the snapshot on a loop, so
-  // it reads as a living planet without any runtime API calls. Colored by
-  // altitude (low = amber, cruise = pale cyan).
-  useEffect(() => {
-    const globe = globeEl.current;
-    if (!globe) return;
-    const scene = globe.scene();
-    const raw = flightsData.flights as number[][]; // [lat, lng, track, velMs, altKm]
-    const n = raw.length;
-    if (n === 0) return;
-
-    const origLat = new Float32Array(n), origLng = new Float32Array(n);
-    const curLat = new Float32Array(n), curLng = new Float32Array(n);
-    const track = new Float32Array(n), vel = new Float32Array(n), altKm = new Float32Array(n);
-    const colors = new Float32Array(n * 3);
-    const cLow = new THREE.Color(0xfbbf24), cHigh = new THREE.Color(0xbae6fd);
-    for (let i = 0; i < n; i++) {
-      const [la, ln, tr, ve, al] = raw[i];
-      origLat[i] = curLat[i] = la; origLng[i] = curLng[i] = ln;
-      track[i] = tr; vel[i] = ve; altKm[i] = al;
-      const c = al < 3 ? cLow : cHigh;
-      colors.set([c.r, c.g, c.b], i * 3);
-    }
-
-    const geom = new THREE.BufferGeometry();
-    const positions = new Float32Array(n * 3);
-    geom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    const mat = new THREE.PointsMaterial({ size: 1.1, vertexColors: true, sizeAttenuation: true });
-    const points = new THREE.Points(geom, mat);
-    points.frustumCulled = false;
-    scene.add(points);
-    const posAttr = geom.getAttribute("position") as THREE.BufferAttribute;
-
-    const SPEED = 30; // time-warp so ~250 m/s cruise is perceptible on the globe
-    const LOOP_MS = 90_000; // reset to the snapshot every 90s to bound drift
-    const DEG = Math.PI / 180;
-    let lastT = performance.now();
-    let loopStart = lastT;
-    let raf = 0;
-    const step = () => {
-      const now = performance.now();
-      points.visible = layersRef.current.flights;
-      if (points.visible) {
-        const dt = ((now - lastT) / 1000) * SPEED; // warped seconds since last frame
-        if (now - loopStart > LOOP_MS) {
-          curLat.set(origLat); curLng.set(origLng); loopStart = now;
-        }
-        for (let i = 0; i < n; i++) {
-          const latRad = curLat[i] * DEG;
-          const north = vel[i] * Math.cos(track[i] * DEG); // m/s
-          const east = vel[i] * Math.sin(track[i] * DEG);
-          curLat[i] += (north * dt) / 111320;
-          curLng[i] += (east * dt) / (111320 * Math.max(0.1, Math.cos(latRad)));
-          if (curLng[i] > 180) curLng[i] -= 360;
-          else if (curLng[i] < -180) curLng[i] += 360;
-          const p = globe.getCoords(curLat[i], curLng[i], 0.005 + altKm[i] * 0.0004);
-          posAttr.setXYZ(i, p.x, p.y, p.z);
-        }
-        posAttr.needsUpdate = true;
-      }
-      lastT = now;
-      raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => {
-      cancelAnimationFrame(raf);
-      scene.remove(points);
-      geom.dispose();
-      mat.dispose();
-    };
-  }, [ready]);
-
-  // Live flights (zoom-in tier): OPTIONAL, off unless VITE_FLIGHTS_PROXY points at
-  // a same-origin proxy (see worker/flights.mjs) — the free feeds block direct
-  // browser calls (no CORS), so a tiny Worker relays + caches them. To avoid rate
-  // limits/blocks we only poll when the user is zoomed in and the flights layer is
-  // on, throttled, over just the visible bounding box. Rendered as brighter red
-  // points on top of the ambient snapshot. Fail-safe: any error is ignored.
-  useEffect(() => {
-    const proxy = (import.meta.env as Record<string, string | undefined>).VITE_FLIGHTS_PROXY;
-    const globe = globeEl.current;
-    if (!globe || !proxy) return; // live tier disabled → ambient snapshot only
-    const scene = globe.scene();
-    let points: THREE.Points | null = null;
-    let geom: THREE.BufferGeometry | null = null;
-    let mat: THREE.PointsMaterial | null = null;
-    let stopped = false;
-
-    const ZOOM_ALT = 0.6; // only fetch when closer than this camera altitude
-    const POLL_MS = 20_000; // throttle between viewport fetches
-
-    const clearLive = () => {
-      if (points) { scene.remove(points); geom?.dispose(); mat?.dispose(); points = null; }
-    };
-    const renderLive = (list: number[][]) => {
-      clearLive();
-      const n = list.length;
-      if (n === 0) return;
-      geom = new THREE.BufferGeometry();
-      const pos = new Float32Array(n * 3);
-      for (let i = 0; i < n; i++) {
-        const [la, ln, , , al] = list[i];
-        const p = globe.getCoords(la, ln, 0.006 + (al || 0) * 0.0004);
-        pos.set([p.x, p.y, p.z], i * 3);
-      }
-      geom.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-      mat = new THREE.PointsMaterial({ size: 2.4, color: 0xf87171, sizeAttenuation: true });
-      points = new THREE.Points(geom, mat);
-      points.frustumCulled = false;
-      scene.add(points);
-    };
-
-    const poll = async () => {
-      if (stopped) return;
-      const pov = globe.pointOfView();
-      if (layersRef.current.flights && pov.altitude < ZOOM_ALT) {
-        const span = Math.min(30, Math.max(2, pov.altitude * 60));
-        const q = new URLSearchParams({
-          lamin: Math.max(-90, pov.lat - span).toFixed(2),
-          lomin: (pov.lng - span).toFixed(2),
-          lamax: Math.min(90, pov.lat + span).toFixed(2),
-          lomax: (pov.lng + span).toFixed(2),
-        });
-        try {
-          const res = await fetch(`${proxy}?${q}`);
-          if (res.ok) renderLive(((await res.json()).flights as number[][]) || []);
-        } catch {
-          /* ignore — fail-safe, ambient snapshot remains */
-        }
-      } else {
-        clearLive();
-      }
-      if (!stopped) timer = window.setTimeout(poll, POLL_MS);
-    };
-    let timer = window.setTimeout(poll, 1500);
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-      clearLive();
-    };
-  }, [ready]);
 
   const g20Datum = (f: CountryFeature) =>
     G20_BY_ISO[featureIso(f)] ?? G20_BY_NAME[f.properties.name];

@@ -41,6 +41,7 @@ export interface G20Datum {
   pressFreedom0: number; // Press Freedom Index 0..100 (RSF 2024)
   spi0: number; // Social Progress Index 0..100 (2023)
   happiness0: number; // World Happiness Report score 0..10 (2024)
+  homicide0: number; // intentional homicide rate per 100k inhabitants (UNODC ~2021)
 }
 
 /** As-of date + provenance of the generated snapshot. */
@@ -72,6 +73,7 @@ const withDefaults = (c: Record<string, number | string>): G20Datum => ({
   pressFreedom0: (c.pressFreedom0 as number) ?? 55,
   spi0: (c.spi0 as number) ?? 65,
   happiness0: (c.happiness0 as number) ?? 5.5,
+  homicide0: (c.homicide0 as number) ?? 6,
 });
 
 export const G20: G20Datum[] = (

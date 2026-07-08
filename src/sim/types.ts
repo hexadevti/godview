@@ -69,6 +69,7 @@ export interface CountryConst {
   pressFreedom0: number; // Press Freedom Index 0..100 (RSF 2024)
   spi0: number; // Social Progress Index 0..100 (2023)
   happiness0: number; // World Happiness Report score 0..10 (2024)
+  homicide0: number; // intentional homicide rate per 100k inhabitants (UNODC ~2021)
 }
 
 /** Mutable per-country state advanced each tick. */
@@ -96,6 +97,7 @@ export interface CountryState {
   pressFreedom: number; // Press Freedom Index 0..100 (evolves)
   spi: number; // Social Progress Index 0..100 (evolves)
   happiness: number; // World Happiness score 0..10 (evolves)
+  homicide: number; // intentional homicide rate per 100k inhabitants (evolves)
   // ---- Derived each tick (kept on state for charts + display) ----
   fiscalBalancePctGdp: number; // budget balance, % of GDP (negative = deficit)
   sovereignSpread: number; // risk premium added to borrowing cost, p.p.

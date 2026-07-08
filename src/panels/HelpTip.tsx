@@ -47,6 +47,7 @@ const HELP_PT = {
   pressFreedom: "Índice de Liberdade de Imprensa (Repórteres Sem Fronteiras), 0–100 — maior = imprensa mais livre. Reflete pluralismo, independência e segurança dos jornalistas. Evolui com instituições e abertura democrática; repressão o derruba.",
   spi: "Índice de Progresso Social (SPI), 0–100. Mede o quanto a sociedade atende necessidades básicas, bem-estar e oportunidade — além do PIB. É um índice-resultado: sobe com IDH, menos pobreza/desigualdade e mais direitos.",
   happiness: "Índice de Felicidade Global (Relatório Mundial da Felicidade), 0–10. Nota média de satisfação com a vida, explicada por renda, apoio social, saúde, liberdade e corrupção. Um resumo de quão satisfeita a população está.",
+  homicide: "Taxa de homicídios intencionais por 100 mil habitantes (UNODC). Menor = mais seguro. América Latina e partes da África ficam em 20–40+; boa parte da Europa e do Leste Asiático fica abaixo de 1. Sobe com pobreza, desigualdade, desemprego e instabilidade; cai com gasto social, instituições mais íntegras e crescimento.",
   institutions: "Reforma institucional (0–100; 50 = neutro): Estado de direito, combate à corrupção, qualidade democrática e imprensa livre. Acima de 50 eleva IPC, democracia, liberdade de imprensa e, em parte, a competitividade — muda devagar (anos).",
   market: "Abertura & desregulamentação de mercado (0–100; 50 = neutro). Acima de 50 eleva a liberdade econômica, a competitividade e o crescimento, mas tende a aumentar a desigualdade (eficiência vs. equidade).",
 } as const;
@@ -93,6 +94,7 @@ const HELP_EN: Record<HelpId, string> = {
   pressFreedom: "Press Freedom Index (Reporters Without Borders), 0–100 — higher = freer press. Reflects pluralism, independence and journalist safety. Evolves with institutions and democratic openness; repression pushes it down.",
   spi: "Social Progress Index (SPI), 0–100. Measures how well a society meets basic human needs, wellbeing and opportunity — beyond GDP. An outcome index: rises with HDI, less poverty/inequality and more rights.",
   happiness: "World Happiness score (World Happiness Report), 0–10. Average life-satisfaction rating, explained by income, social support, health, freedom and corruption. A summary of how satisfied the population is.",
+  homicide: "Intentional homicide rate per 100,000 inhabitants (UNODC). Lower = safer. Latin America and parts of Africa run 20–40+; much of Europe and East Asia sits below 1. Rises with poverty, inequality, joblessness and instability; falls with social spending, cleaner institutions and growth.",
   institutions: "Institutional reform (0–100; 50 = neutral): rule of law, anti-corruption, democratic quality and a free press. Above 50 raises CPI, democracy, press freedom and (partly) competitiveness — changes slowly (years).",
   market: "Market liberalization & deregulation (0–100; 50 = neutral). Above 50 raises economic freedom, competitiveness and growth, but tends to widen inequality (efficiency vs. equity).",
 };
@@ -137,6 +139,7 @@ const HELP_ES: Record<HelpId, string> = {
   pressFreedom: "Índice de Libertad de Prensa (Reporteros Sin Fronteras), 0–100 — mayor = prensa más libre. Refleja pluralismo, independencia y seguridad de los periodistas. Evoluciona con las instituciones y la apertura democrática; la represión lo baja.",
   spi: "Índice de Progreso Social (SPI), 0–100. Mide cuánto la sociedad satisface necesidades básicas, bienestar y oportunidad — más allá del PIB. Es un índice-resultado: sube con el IDH, menos pobreza/desigualdad y más derechos.",
   happiness: "Índice de Felicidad Global (Informe Mundial de la Felicidad), 0–10. Nota media de satisfacción con la vida, explicada por ingreso, apoyo social, salud, libertad y corrupción. Un resumen de cuán satisfecha está la población.",
+  homicide: "Tasa de homicidios intencionales por 100 mil habitantes (UNODC). Menor = más seguro. América Latina y partes de África rondan 20–40+; buena parte de Europa y Asia Oriental está por debajo de 1. Sube con pobreza, desigualdad, desempleo e inestabilidad; baja con gasto social, instituciones más íntegras y crecimiento.",
   institutions: "Reforma institucional (0–100; 50 = neutro): Estado de derecho, lucha contra la corrupción, calidad democrática y prensa libre. Por encima de 50 eleva el IPC, la democracia, la libertad de prensa y, en parte, la competitividad — cambia despacio (años).",
   market: "Apertura y desregulación de mercado (0–100; 50 = neutro). Por encima de 50 eleva la libertad económica, la competitividad y el crecimiento, pero tiende a aumentar la desigualdad (eficiencia vs. equidad).",
 };
@@ -185,6 +188,7 @@ const PROV_PT: Record<HelpId, string> = {
   pressFreedom: "Referência: Repórteres Sem Fronteiras (RSF) · 2024 · âncora real (fallback pelo IDH); evolui na simulação",
   spi: "Referência: Social Progress Imperative (SPI) · 2023 · âncora real (fallback pelo IDH); evolui na simulação",
   happiness: "Referência: World Happiness Report · 2024 · âncora real (fallback pelo IDH); evolui na simulação",
+  homicide: "Referência: UNODC (homicídios intencionais por 100 mil) · ~2021 · âncora real (fallback pelo IDH); evolui na simulação",
   institutions: "Alavanca definida por você (50 = neutro)",
   market: "Alavanca definida por você (50 = neutro)",
 };
@@ -229,6 +233,7 @@ const PROV_EN: Record<HelpId, string> = {
   pressFreedom: "Source: Reporters Without Borders (RSF) · 2024 · real anchor (HDI fallback); evolves in the simulation",
   spi: "Source: Social Progress Imperative (SPI) · 2023 · real anchor (HDI fallback); evolves in the simulation",
   happiness: "Source: World Happiness Report · 2024 · real anchor (HDI fallback); evolves in the simulation",
+  homicide: "Source: UNODC (intentional homicides per 100k) · ~2021 · real anchor (HDI fallback); evolves in the simulation",
   institutions: "Lever set by you (50 = neutral)",
   market: "Lever set by you (50 = neutral)",
 };
@@ -273,6 +278,7 @@ const PROV_ES: Record<HelpId, string> = {
   pressFreedom: "Fuente: Reporteros Sin Fronteras (RSF) · 2024 · ancla real (fallback por IDH); evoluciona en la simulación",
   spi: "Fuente: Social Progress Imperative (SPI) · 2023 · ancla real (fallback por IDH); evoluciona en la simulación",
   happiness: "Fuente: World Happiness Report · 2024 · ancla real (fallback por IDH); evoluciona en la simulación",
+  homicide: "Fuente: UNODC (homicidios intencionales por 100 mil) · ~2021 · ancla real (fallback por IDH); evoluciona en la simulación",
   institutions: "Palanca definida por ti (50 = neutro)",
   market: "Palanca definida por ti (50 = neutro)",
 };

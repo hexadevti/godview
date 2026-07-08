@@ -62,6 +62,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "metric.pressFreedom": { pt: "Liberdade de imprensa", en: "Press freedom", es: "Libertad de prensa" },
   "metric.spi": { pt: "Progresso social", en: "Social progress", es: "Progreso social" },
   "metric.happiness": { pt: "Felicidade", en: "Happiness", es: "Felicidad" },
+  "metric.homicide": { pt: "Homicídios", en: "Homicides", es: "Homicidios" },
 
   // ---- Infrastructure layers ----
   "layer.air": { pt: "Aéreo", en: "Air", es: "Aéreo" },
@@ -75,7 +76,6 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "layer.satellites": { pt: "Satélites", en: "Satellites", es: "Satélites" },
   "layer.clouds": { pt: "Nuvens", en: "Clouds", es: "Nubes" },
   "layer.sky": { pt: "Céu ☀️🌙", en: "Sky ☀️🌙", es: "Cielo ☀️🌙" },
-  "layer.flights": { pt: "Voos ✈️", en: "Flights ✈️", es: "Vuelos ✈️" },
 
   // ---- Base maps ----
   "basemap.political": { pt: "Político", en: "Political", es: "Político" },
@@ -121,6 +121,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "scale.pressFreedom": { pt: "Liberdade de imprensa — 0–100 (RSF)", en: "Press freedom — 0–100 (RSF)", es: "Libertad de prensa — 0–100 (RSF)" },
   "scale.spi": { pt: "Progresso social (SPI) — 0–100", en: "Social progress (SPI) — 0–100", es: "Progreso social (SPI) — 0–100" },
   "scale.happiness": { pt: "Felicidade global — 0–10 (WHR)", en: "Global happiness — 0–10 (WHR)", es: "Felicidad global — 0–10 (WHR)" },
+  "scale.homicide": { pt: "Homicídios — por 100 mil hab. (UNODC)", en: "Homicides — per 100k people (UNODC)", es: "Homicidios — por 100 mil hab. (UNODC)" },
 
   // ---- Scenarios ----
   "scenario.sandbox.label": { pt: "Sandbox (hoje)", en: "Sandbox (today)", es: "Sandbox (hoy)" },
@@ -233,6 +234,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "col.pressFreedom": { pt: "Imprensa", en: "Press", es: "Prensa" },
   "col.spi": { pt: "SPI", en: "SPI", es: "SPI" },
   "col.happiness": { pt: "Felic.", en: "Happ.", es: "Felic." },
+  "col.homicide": { pt: "Homic.", en: "Homic.", es: "Homic." },
   "col.tradeBalancePctGdp": { pt: "Saldo", en: "Balance", es: "Saldo" },
 
   // ---- Country panel ----
@@ -272,6 +274,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "stat.pressFreedom": { pt: "Liberdade de imprensa", en: "Press freedom", es: "Libertad de prensa" },
   "stat.spi": { pt: "Progresso social", en: "Social progress", es: "Progreso social" },
   "stat.happiness": { pt: "Felicidade", en: "Happiness", es: "Felicidad" },
+  "stat.homicide": { pt: "Homicídios (100k)", en: "Homicides (100k)", es: "Homicidios (100k)" },
 
   // ---- Levers ----
   "lever.rate": { pt: "Taxa de juros", en: "Policy rate", es: "Tasa de interés" },

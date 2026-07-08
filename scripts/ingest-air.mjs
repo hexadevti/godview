@@ -18,8 +18,8 @@ const OUT = resolve(__dirname, "../src/data/generated/air-routes.json");
 const require = createRequire(import.meta.url);
 const WORLD = require("world-countries");
 
-const MAX_AIRPORT_PAIRS = 2; // busiest airport pairs per country pair
-const MAX_PER_SOURCE = 2;    // busiest destinations kept per origin country
+const MAX_AIRPORT_PAIRS = 3; // busiest airport pairs per country pair
+const MAX_PER_SOURCE = 6;    // busiest destinations kept per origin country
 const MIN_COUNT = 2;         // ignore country pairs with < 2 recorded flights
 
 // OpenFlights airport country name -> ISO 3166-1 numeric. Built from
@@ -125,15 +125,30 @@ async function main() {
   }
 
   routes.sort((x, y) => y.value - x.value);
+
+  // Every mappable airport (IATA + coords), deduped by rounded position, for the
+  // "all airports" dot layer on the globe. Compact [lat, lng] pairs.
+  const seenAp = new Set();
+  const airportPts = [];
+  for (const a of Object.values(airports)) {
+    const lat = Math.round(a.lat * 100) / 100;
+    const lng = Math.round(a.lng * 100) / 100;
+    const k = `${lat},${lng}`;
+    if (seenAp.has(k)) continue;
+    seenAp.add(k);
+    airportPts.push([lat, lng]);
+  }
+
   const out = {
     asOf: new Date().toISOString().slice(0, 10),
-    source: "OpenFlights routes.dat (real airport connectivity, worldwide); value = flight frequency",
+    source: "OpenFlights airports.dat + routes.dat (real, worldwide); value = flight frequency",
     routes,
+    airports: airportPts,
   };
   mkdirSync(dirname(OUT), { recursive: true });
   writeFileSync(OUT, JSON.stringify(out) + "\n");
   const countries = new Set(routes.flatMap((r) => [r.from, r.to]));
-  console.log(`Wrote ${routes.length} air routes touching ${countries.size} countries to ${OUT}`);
+  console.log(`Wrote ${routes.length} air routes + ${airportPts.length} airports touching ${countries.size} countries to ${OUT}`);
   console.log("Top:", routes.slice(0, 8).map((r) => `${r.from}->${r.to}:${r.value}`).join("  "));
 }
 

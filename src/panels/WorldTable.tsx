@@ -14,7 +14,7 @@ import { useDraggable, useResizable } from "./useDraggable";
 type Key =
   | "name" | "gdp" | "gdpGrowthAnn" | "inflationAnn" | "policyRate" | "fx" | "tradeBalancePctGdp"
   | "unemployment" | "debtPctGdp" | "gini" | "population" | "gdpPerCapita" | "education" | "hdi" | "costOfLiving" | "gci"
-  | "econFreedom" | "cpi" | "democracy" | "pressFreedom" | "spi" | "happiness";
+  | "econFreedom" | "cpi" | "democracy" | "pressFreedom" | "spi" | "happiness" | "homicide";
 
 // Column labels are resolved at render via t(`col.${key}`).
 const COLS: Array<{ key: Key; num: boolean; help?: HelpId }> = [
@@ -28,6 +28,7 @@ const COLS: Array<{ key: Key; num: boolean; help?: HelpId }> = [
   { key: "policyRate", num: true, help: "rate" },
   { key: "debtPctGdp", num: true, help: "debt" },
   { key: "gini", num: true, help: "gini" },
+  { key: "homicide", num: true, help: "homicide" },
   { key: "education", num: true, help: "education" },
   { key: "hdi", num: true, help: "hdi" },
   { key: "costOfLiving", num: true, help: "costOfLiving" },
@@ -60,7 +61,7 @@ function unempColor(v: number) {
 
 // Columns where a LOWER value is better — so ranking #1 goes to the lowest. All
 // other numeric columns rank #1 = highest.
-const LOWER_BETTER = new Set<Key>(["inflationAnn", "unemployment", "debtPctGdp", "gini", "costOfLiving"]);
+const LOWER_BETTER = new Set<Key>(["inflationAnn", "unemployment", "debtPctGdp", "gini", "costOfLiving", "homicide"]);
 
 // Formatted display string for a numeric cell (value mode).
 function fmtCell(c: CountryState, k: Key, t: Parameters<typeof formatPop>[1]): string {
@@ -74,6 +75,7 @@ function fmtCell(c: CountryState, k: Key, t: Parameters<typeof formatPop>[1]): s
     case "policyRate": return `${c.controls.policyRate.toFixed(2)}%`;
     case "debtPctGdp": return `${c.debtPctGdp.toFixed(0)}%`;
     case "gini": return c.gini.toFixed(0);
+    case "homicide": return c.homicide.toFixed(1);
     case "education": return c.education.toFixed(0);
     case "hdi": return c.hdi.toFixed(3);
     case "costOfLiving": return c.costOfLiving.toFixed(0);

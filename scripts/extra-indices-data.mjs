@@ -1,4 +1,4 @@
-// Six governance / wellbeing indices, keyed by ISO 3166-1 alpha-3. All are real
+// Seven governance / wellbeing indices, keyed by ISO 3166-1 alpha-3. All are real
 // published indices with no free bulk API, so they are curated here (with an
 // HDI-based fallback for countries a given table doesn't cover). Shared by
 // scripts/ingest.mjs and scripts/patch-extra-indices.mjs.
@@ -9,6 +9,7 @@
 //   pressFreedom — Press Freedom Index (RSF 2024), 0..100 (higher = freer)
 //   spi          — Social Progress Index (2023), 0..100
 //   happiness    — World Happiness Report (2024 life ladder), 0..10
+//   homicide     — Intentional homicide rate (UNODC, ~2021), per 100k inhabitants (lower = safer)
 
 export const ECON_FREEDOM = {
   USA: 70, CHN: 48, DEU: 73, JPN: 69, GBR: 73, IND: 53, FRA: 63, RUS: 53, ITA: 62,
@@ -84,6 +85,21 @@ export const HAPPINESS = {
   GEO: 4.89, ALB: 5.3, ARM: 5.3, LBN: 2.71, MNG: 5.69, BWA: 3.44, CUB: 5.5, CRI: 6.61, PAN: 6.36,
 };
 
+// Intentional homicides per 100,000 inhabitants (UNODC / national sources, most
+// recent ~2021). Higher = more violent. Note the wide spread: Latin America and
+// parts of Africa run 20–40+, while much of Europe/East Asia sits below 1.
+export const HOMICIDE = {
+  USA: 6.8, CHN: 0.5, DEU: 0.9, JPN: 0.2, GBR: 1.0, IND: 2.9, FRA: 1.1, RUS: 7.3, ITA: 0.5,
+  CAN: 2.0, BRA: 22.0, ESP: 0.6, KOR: 0.5, MEX: 26.0, AUS: 0.9, TUR: 2.5, IDN: 0.4, NLD: 0.6,
+  SAU: 1.3, CHE: 0.5, POL: 0.7, BEL: 1.1, IRL: 0.7, ARG: 5.3, SWE: 1.1, ISR: 1.8, AUT: 0.9,
+  THA: 3.2, ARE: 0.5, NOR: 0.5, VNM: 1.5, PHL: 6.5, MYS: 2.1, DNK: 0.6, COL: 27.0, BGD: 2.4,
+  ROU: 1.2, ZAF: 41.0, PAK: 3.8, CZE: 0.9, EGY: 1.2, IRN: 2.5, CHL: 4.5, PRT: 0.8, PER: 8.0,
+  FIN: 1.6, KAZ: 4.5, NGA: 21.0, DZA: 1.4, GRC: 0.9, NZL: 1.3, HUN: 0.9, QAT: 0.5, UKR: 6.0,
+  MAR: 1.4, KWT: 1.4, SVK: 1.4, KEN: 5.0, BGR: 1.2, ECU: 26.0, LUX: 0.8, SRB: 1.3, VEN: 40.0,
+  LTU: 3.5, BLR: 2.4, URY: 8.5, SVN: 0.5, JOR: 1.6, TUN: 3.1, LVA: 3.4, EST: 2.0, ISL: 0.3,
+  GEO: 1.9, ALB: 2.3, ARM: 1.8, LBN: 4.0, MNG: 5.0, BWA: 15.0, CUB: 5.0, CRI: 12.5, PAN: 11.5,
+};
+
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const r0 = (v) => Math.round(v);
 const r1 = (v) => Math.round(v * 10) / 10;
@@ -98,6 +114,10 @@ const fb = {
   pressFreedom: (h) => clamp(r0(20 + 82 * (h - 0.45)), 15, 92),
   spi: (h) => clamp(r0(102 * h - 9), 28, 96),
   happiness: (h) => clamp(r1(2.4 + 5.6 * (h - 0.4)), 2.8, 7.6),
+  // Violence correlates only weakly (and noisily) with human development, so this
+  // is a coarse, bounded guess — only reached for small/fragile states the table
+  // doesn't cover. Higher HDI → lower assumed rate.
+  homicide: (h) => clamp(r1(18 - 22 * (h - 0.4)), 0.4, 40),
 };
 
 const TABLES = {
@@ -107,10 +127,11 @@ const TABLES = {
   pressFreedom: PRESS_FREEDOM,
   spi: SPI,
   happiness: HAPPINESS,
+  homicide: HOMICIDE,
 };
 
-/** Resolve all six indices for a country given its iso3 + HDI (for fallbacks).
- *  Returns { econFreedom0, cpi0, democracy0, pressFreedom0, spi0, happiness0 }. */
+/** Resolve all seven indices for a country given its iso3 + HDI (for fallbacks).
+ *  Returns { econFreedom0, cpi0, democracy0, pressFreedom0, spi0, happiness0, homicide0 }. */
 export function resolveExtraIndices(iso3, hdi0) {
   const out = {};
   for (const key of Object.keys(TABLES)) {

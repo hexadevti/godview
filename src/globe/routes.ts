@@ -15,7 +15,12 @@ const ROAD_ROUTES = (roadData as unknown as { routes: Record<string, LatLng[]> }
 
 // Real airport-pair connectivity (OpenFlights), weighted by Comtrade trade.
 interface AirRoute { from: number; to: number; value: number; a: [number, number]; b: [number, number] }
-const AIR_ROUTES = (airData as unknown as { routes: AirRoute[] }).routes;
+const AIR_DATA = airData as unknown as { routes: AirRoute[]; airports?: [number, number][] };
+const AIR_ROUTES = AIR_DATA.routes;
+
+/** Every mappable airport worldwide (OpenFlights), as [lat, lng] pairs — for the
+ *  "all airports" dot layer on the globe. */
+export const AIRPORTS: [number, number][] = AIR_DATA.airports ?? [];
 
 // air/sea = international; road/rail = internal (only shown for the selected country).
 export type RouteKind = "air" | "sea" | "road" | "rail";
@@ -145,9 +150,9 @@ const SPACING_BASE = 250000; // spacingKm = SPACING_BASE / value, then clamped
 
 const clampN = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-export function buildVehicles(): Vehicle[] {
+export function buildVehicles(routes: Route[] = ROUTES): Vehicle[] {
   const vehicles: Vehicle[] = [];
-  ROUTES.forEach((r, routeIndex) => {
+  routes.forEach((r, routeIndex) => {
     let count: number;
     let groundKmPerSec: number;
     if (r.kind === "road" || r.kind === "rail") {
@@ -155,7 +160,11 @@ export function buildVehicles(): Vehicle[] {
       groundKmPerSec = r.kind === "road" ? 80 : 110;
     } else {
       const spacingKm = clampN(SPACING_BASE / r.value, MIN_SPACING_KM, MAX_SPACING_KM);
-      count = Math.max(1, Math.min(MAX_PER_ROUTE, Math.round(r.lengthKm / spacingKm)));
+      const scaled = Math.min(MAX_PER_ROUTE, Math.round(r.lengthKm / spacingKm));
+      // Fewer planes on short air routes: hops under ~1200 km get NO plane (the
+      // arc + airports still draw); longer routes keep a length-scaled count, so
+      // busy long hauls get more. Sea lanes always keep at least one.
+      count = r.kind === "air" ? (r.lengthKm < 1200 ? 0 : Math.max(1, scaled)) : Math.max(1, scaled);
       groundKmPerSec = r.kind === "air" ? 380 : 160; // slower, visual pace (not real)
     }
     const tPerSec = groundKmPerSec / r.lengthKm;

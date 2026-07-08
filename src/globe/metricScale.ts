@@ -8,7 +8,7 @@ import type { CountryState } from "../sim/types";
 export type Metric =
   | "gdp" | "growth" | "inflation" | "unemployment" | "inequality"
   | "gdpPerCapita" | "population" | "education" | "hdi" | "costOfLiving" | "gci"
-  | "econFreedom" | "cpi" | "democracy" | "pressFreedom" | "spi" | "happiness";
+  | "econFreedom" | "cpi" | "democracy" | "pressFreedom" | "spi" | "happiness" | "homicide";
 
 const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
 
@@ -194,6 +194,15 @@ export const METRIC_SCALES: Record<Metric, MetricScale> = {
     value: (c) => c.happiness,
     t: (v) => clamp01((v - 2) / 6),
     ticks: [3, 4, 5, 6, 7],
+    fmt: (v) => v.toFixed(1),
+  },
+  homicide: {
+    label: "Homicídios — por 100 mil hab.",
+    lo: "#22c55e",
+    hi: "#ef4444",
+    value: (c) => c.homicide,
+    t: (v) => clamp01(v / 40),
+    ticks: [0, 10, 20, 30, 40],
     fmt: (v) => v.toFixed(1),
   },
 };

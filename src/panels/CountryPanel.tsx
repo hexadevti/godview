@@ -243,6 +243,7 @@ function CountryCard({
               <Stat label={t("stat.spread")} value={`+${country.sovereignSpread.toFixed(1)} p.p.`} help="spread" />
               <Stat label={t("stat.gini")} value={country.gini.toFixed(0)} help="gini" />
               <Stat label={t("stat.poverty")} value={`${country.povertyPct.toFixed(0)}%`} help="poverty" />
+              <Stat label={t("stat.homicide")} value={country.homicide.toFixed(1)} help="homicide" />
               <Stat label={t("stat.education")} value={`${country.education.toFixed(0)}/100`} help="education" />
               <Stat label={t("stat.hdi")} value={country.hdi.toFixed(3)} help="hdi" />
               <Stat label={t("stat.costOfLiving")} value={country.costOfLiving.toFixed(0)} help="costOfLiving" />
