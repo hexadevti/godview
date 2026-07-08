@@ -115,7 +115,7 @@ const PATH_COLORS: Record<PathKind, string> = {
 };
 
 export type LayerState = Record<
-  RouteKind | "cities" | "cables" | "rivers" | "datacenters" | "satellites" | "clouds" | "sky" | "borders",
+  RouteKind | "cities" | "cables" | "rivers" | "datacenters" | "satellites" | "clouds" | "sky" | "atmosphere" | "borders",
   boolean
 >;
 
@@ -439,6 +439,7 @@ export function GlobeView({
     starGeom.setAttribute("color", new THREE.BufferAttribute(col, 3));
     const stars = new THREE.Points(starGeom, new THREE.PointsMaterial({ size: 1.5, sizeAttenuation: false, vertexColors: true }));
     stars.frustumCulled = false;
+    scene.add(stars);
 
     // Sun: a small bright disk + a soft additive corona sprite (realistic glow).
     const sunCore = new THREE.Mesh(new THREE.SphereGeometry(45, 32, 32), new THREE.MeshBasicMaterial({ color: 0xfff6de }));
@@ -460,8 +461,7 @@ export function GlobeView({
     const moonFill = new THREE.AmbientLight(0x151a2b, 1.0); // faint earthshine on the dark limb
     moonFill.layers.set(1);
     cam.layers.enable(1);
-
-    scene.add(stars, sunCore, sunGlow, moon, moonLight, moonFill);
+    scene.add(sunCore, sunGlow, moon, moonLight, moonFill);
 
     const place = () => {
       const s = sunDirectionNow(globe);
@@ -471,15 +471,16 @@ export function GlobeView({
       moon.position.copy(moonDirectionNow(globe)).multiplyScalar(5200);
     };
     place();
-    const id = setInterval(place, 60000);
+    const placeId = setInterval(place, 60000);
 
     return () => {
-      clearInterval(id);
-      cam.layers.disable(1);
-      scene.remove(stars, sunCore, sunGlow, moon, moonLight, moonFill);
+      clearInterval(placeId);
+      scene.remove(stars);
       starGeom.dispose();
-      glowTex.dispose();
       (stars.material as THREE.Material).dispose();
+      cam.layers.disable(1);
+      scene.remove(sunCore, sunGlow, moon, moonLight, moonFill);
+      glowTex.dispose();
       (sunGlow.material as THREE.Material).dispose();
       for (const obj of [sunCore, moon]) {
         obj.geometry.dispose();
@@ -488,6 +489,142 @@ export function GlobeView({
       if (cam.far !== prevFar) { cam.far = prevFar; cam.updateProjectionMatrix(); }
     };
   }, [layers.sky, size.w]);
+
+  // Atmosphere layer: a thin shell around the globe shaded with physically-based
+  // single-scattering (Rayleigh + Mie, numerically integrated) driven by the real
+  // Sun direction — the blue limb halo, reddening to sunset tones at the
+  // terminator, dark on the night side. Camera position comes free (three injects
+  // `cameraPosition` into the fragment shader); only the Sun direction is updated.
+  useEffect(() => {
+    if (!layers.atmosphere || size.w === 0) return;
+    const globe = globeEl.current;
+    if (!globe) return;
+    const scene = globe.scene();
+    const R = globe.getGlobeRadius(); // globe (Earth) radius in world units
+
+    const mat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide, // shade the far shell → glow rings the globe's limb
+      uniforms: {
+        uSunDir: { value: new THREE.Vector3(1, 0, 0) },
+        uCamScale: { value: 1 / R }, // world units → planet radii (keeps float32 precise)
+        uIntensity: { value: 1.0 },
+      },
+      vertexShader: `
+        varying vec3 vWorldPos;
+        void main() {
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vWorldPos = wp.xyz;
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      // Distances are in PLANET RADII (rPlanet = 1) so all magnitudes stay near 1
+      // and float32 keeps sub-metre precision even from far out. Rayleigh/Mie
+      // coefficients and scale heights are the real values × Earth radius.
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vWorldPos;
+        uniform vec3 uSunDir;
+        uniform float uCamScale;
+        uniform float uIntensity;
+
+        const float PI = 3.141592653589793;
+        const int I_STEPS = 16; // primary ray samples
+        const int J_STEPS = 8;  // light ray (optical depth) samples
+
+        const float R_PLANET = 1.0;
+        const float R_ATMOS  = 1.015696;                     // 6471 / 6371
+        const vec3  K_RLH    = vec3(35.04, 82.82, 142.71);   // Rayleigh × Earth radius
+        const float K_MIE    = 133.79;                       // Mie × Earth radius
+        const float SH_RLH   = 0.0012557;                    // 8 km / Earth radius
+        const float SH_MIE   = 0.00018835;                   // 1.2 km / Earth radius
+        const float I_SUN    = 22.0;
+        const float G        = 0.758;
+
+        // Ray/sphere intersection for a sphere centred at the origin.
+        vec2 rsi(vec3 r0, vec3 rd, float sr) {
+          float b = dot(rd, r0);
+          float c = dot(r0, r0) - sr * sr;
+          float d = b * b - c;
+          if (d < 0.0) return vec2(1e9, -1e9);
+          d = sqrt(d);
+          return vec2(-b - d, -b + d);
+        }
+
+        // Single-scattering atmosphere (after wwwtyro/glsl-atmosphere, public domain).
+        vec3 atmosphere(vec3 r, vec3 r0, vec3 pSun) {
+          pSun = normalize(pSun);
+          r = normalize(r);
+          vec2 p = rsi(r0, r, R_ATMOS);
+          if (p.x > p.y) return vec3(0.0);
+          p.x = max(p.x, 0.0);
+          float pl = rsi(r0, r, R_PLANET).x;
+          if (pl > 0.0) p.y = min(p.y, pl); // stop the ray at the planet surface
+          float iStep = (p.y - p.x) / float(I_STEPS);
+          float iT = p.x;
+          vec3 totalRlh = vec3(0.0);
+          vec3 totalMie = vec3(0.0);
+          float iOdRlh = 0.0;
+          float iOdMie = 0.0;
+          float mu = dot(r, pSun);
+          float mumu = mu * mu;
+          float gg = G * G;
+          float pRlh = 3.0 / (16.0 * PI) * (1.0 + mumu);
+          float pMie = 3.0 / (8.0 * PI) * ((1.0 - gg) * (mumu + 1.0)) /
+                       (pow(1.0 + gg - 2.0 * mu * G, 1.5) * (2.0 + gg));
+          for (int i = 0; i < I_STEPS; i++) {
+            vec3 iPos = r0 + r * (iT + iStep * 0.5);
+            float iHeight = length(iPos) - R_PLANET;
+            float odRlh = exp(-iHeight / SH_RLH) * iStep;
+            float odMie = exp(-iHeight / SH_MIE) * iStep;
+            iOdRlh += odRlh;
+            iOdMie += odMie;
+            float jStep = rsi(iPos, pSun, R_ATMOS).y / float(J_STEPS);
+            float jT = 0.0;
+            float jOdRlh = 0.0;
+            float jOdMie = 0.0;
+            for (int j = 0; j < J_STEPS; j++) {
+              vec3 jPos = iPos + pSun * (jT + jStep * 0.5);
+              float jHeight = length(jPos) - R_PLANET;
+              jOdRlh += exp(-jHeight / SH_RLH) * jStep;
+              jOdMie += exp(-jHeight / SH_MIE) * jStep;
+              jT += jStep;
+            }
+            vec3 attn = exp(-(K_MIE * (iOdMie + jOdMie) + K_RLH * (iOdRlh + jOdRlh)));
+            totalRlh += odRlh * attn;
+            totalMie += odMie * attn;
+            iT += iStep;
+          }
+          return I_SUN * (pRlh * K_RLH * totalRlh + pMie * K_MIE * totalMie);
+        }
+
+        void main() {
+          vec3 rayDir = normalize(vWorldPos - cameraPosition);
+          vec3 r0 = cameraPosition * uCamScale; // in planet radii
+          vec3 col = atmosphere(rayDir, r0, uSunDir);
+          col = 1.0 - exp(-col); // exposure tone-map
+          gl_FragColor = vec4(col * uIntensity, 1.0);
+        }
+      `,
+    });
+
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(R * 1.03, 64, 64), mat);
+    shell.frustumCulled = false;
+    scene.add(shell);
+
+    const place = () => { (mat.uniforms.uSunDir.value as THREE.Vector3).copy(sunDirectionNow(globe)); };
+    place();
+    const placeId = setInterval(place, 60000);
+
+    return () => {
+      clearInterval(placeId);
+      scene.remove(shell);
+      shell.geometry.dispose();
+      mat.dispose();
+    };
+  }, [layers.atmosphere, size.w]);
 
   const ready = size.w > 0; // globe mounted (has measured size)
 
@@ -721,7 +858,6 @@ export function GlobeView({
     };
   }, [ready]);
 
-
   const g20Datum = (f: CountryFeature) =>
     G20_BY_ISO[featureIso(f)] ?? G20_BY_NAME[f.properties.name];
 
@@ -737,7 +873,9 @@ export function GlobeView({
           // Fine sphere tessellation in terrain mode so the displacement map
           // renders smooth mountains (default 4 → coarse; 1 → 360×180 segments).
           globeCurvatureResolution={baseMap === "terrain" ? 1 : 4}
-          showAtmosphere
+          // The realistic scattering shell (Atmosphere layer) replaces the built-in
+          // flat glow when enabled; otherwise keep the simple glow.
+          showAtmosphere={!layers.atmosphere}
           atmosphereColor="#3a6ea5"
           atmosphereAltitude={0.18}
           // --- Countries ---

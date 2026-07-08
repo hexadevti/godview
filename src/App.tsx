@@ -28,6 +28,7 @@ const LAYER_DEFS: Array<{ id: keyof LayerState; color: string }> = [
   { id: "datacenters", color: "#38bdf8" },
   { id: "satellites", color: "#67e8f9" },
   { id: "clouds", color: "#e2e8f0" },
+  { id: "atmosphere", color: "#7dd3fc" },
   { id: "sky", color: "#fde68a" },
 ];
 
@@ -87,7 +88,7 @@ function Shell() {
   const [scopeId, setScopeId] = useState("all");
   const [layers, setLayers] = useState<LayerState>({
     borders: true, air: true, sea: true, road: true, rail: true, cities: true,
-    cables: false, rivers: false, datacenters: false, satellites: false, clouds: false, sky: false,
+    cables: false, rivers: false, datacenters: false, satellites: false, clouds: false, atmosphere: true, sky: false,
   });
   const { scenarioId } = useSim();
   const { t } = useI18n();
@@ -102,7 +103,13 @@ function Shell() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      <GlobeView metric={metric} layers={layers} scope={scope} baseMap={baseMap} reliefScale={reliefScale} />
+      <GlobeView
+        metric={metric}
+        layers={layers}
+        scope={scope}
+        baseMap={baseMap}
+        reliefScale={reliefScale}
+      />
 
       {/* Title (top-left) */}
       <div className="pointer-events-auto absolute left-4 top-4 z-40 w-60 rounded-xl border border-slate-700/60 bg-[#0a0f1c]/55 px-4 py-2.5 backdrop-blur-lg">

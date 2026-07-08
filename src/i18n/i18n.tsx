@@ -76,6 +76,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "layer.datacenters": { pt: "Datacenters", en: "Datacenters", es: "Datacenters" },
   "layer.satellites": { pt: "Satélites", en: "Satellites", es: "Satélites" },
   "layer.clouds": { pt: "Nuvens", en: "Clouds", es: "Nubes" },
+  "layer.atmosphere": { pt: "Atmosfera", en: "Atmosphere", es: "Atmósfera" },
   "layer.sky": { pt: "Céu ☀️🌙", en: "Sky ☀️🌙", es: "Cielo ☀️🌙" },
 
   // ---- Base maps ----
