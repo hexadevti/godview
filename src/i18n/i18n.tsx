@@ -65,6 +65,7 @@ const STRINGS: Record<string, Record<Lang, string>> = {
   "metric.homicide": { pt: "Homicídios", en: "Homicides", es: "Homicidios" },
 
   // ---- Infrastructure layers ----
+  "layer.borders": { pt: "Divisas", en: "Borders", es: "Fronteras" },
   "layer.air": { pt: "Aéreo", en: "Air", es: "Aéreo" },
   "layer.sea": { pt: "Marítimo", en: "Sea", es: "Marítimo" },
   "layer.road": { pt: "Rodoviário", en: "Road", es: "Carretera" },

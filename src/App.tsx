@@ -17,6 +17,7 @@ const METRICS: Metric[] = [
 ];
 
 const LAYER_DEFS: Array<{ id: keyof LayerState; color: string }> = [
+  { id: "borders", color: "#94a3b8" },
   { id: "air", color: "#38bdf8" },
   { id: "sea", color: "#f472b6" },
   { id: "road", color: "#ef4444" },
@@ -85,7 +86,7 @@ function Shell() {
   const [showTable, setShowTable] = useState(false);
   const [scopeId, setScopeId] = useState("all");
   const [layers, setLayers] = useState<LayerState>({
-    air: true, sea: true, road: true, rail: true, cities: true,
+    borders: true, air: true, sea: true, road: true, rail: true, cities: true,
     cables: false, rivers: false, datacenters: false, satellites: false, clouds: false, sky: false,
   });
   const { scenarioId } = useSim();

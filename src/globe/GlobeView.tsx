@@ -115,7 +115,7 @@ const PATH_COLORS: Record<PathKind, string> = {
 };
 
 export type LayerState = Record<
-  RouteKind | "cities" | "cables" | "rivers" | "datacenters" | "satellites" | "clouds" | "sky",
+  RouteKind | "cities" | "cables" | "rivers" | "datacenters" | "satellites" | "clouds" | "sky" | "borders",
   boolean
 >;
 
@@ -764,12 +764,27 @@ export function GlobeView({
             // raise). Kept subtle so internal road/rail lines stay high-contrast.
             return selectedIsos.includes(d.iso) ? lightenRgb(base, 0.22) : base;
           }}
-          polygonSideColor={() => "rgba(6,12,24,0.75)"}
+          polygonSideColor={(f: object) => {
+            const feat = f as CountryFeature;
+            const iso = g20Datum(feat)?.iso ?? featureIso(feat);
+            if (selectedIsos.includes(iso)) return "rgba(6,12,24,0.75)"; // selection wall stays
+            // The slight polygon extrusion draws side walls that read as borders;
+            // hide them when borders are toggled off (esp. over a base map where
+            // the transparent caps mean the walls are the only visible divides).
+            // Return a falsy color so three-globe drops the side geometry entirely
+            // (a transparent color still renders — three-globe skips material.needsUpdate).
+            if (!layers.borders) return "";
+            return "rgba(6,12,24,0.75)";
+          }}
           polygonStrokeColor={(f: object) => {
             const feat = f as CountryFeature;
             const d = g20Datum(feat);
             const iso = d?.iso ?? featureIso(feat);
-            if (selectedIsos.includes(iso)) return "#ffffff";
+            if (selectedIsos.includes(iso)) return "#ffffff"; // selection outline stays
+            // Falsy color → three-globe sets strokeObj.visible = false instead of
+            // drawing a transparent line (setting opacity alone skips needsUpdate,
+            // so a "transparent" stroke keeps rendering opaque).
+            if (!layers.borders) return ""; // borders off → hide the divides
             if (!d) return "#141f33";
             return scope.has(d.iso) ? "#2a3b5a" : "#141f33";
           }}
